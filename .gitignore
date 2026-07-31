@@ -1,0 +1,4 @@
+__pycache__/
+gratisfy_analysis/
+credentials.json
+*.log
