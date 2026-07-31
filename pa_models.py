@@ -75,13 +75,13 @@ class RouteHealth:
     cooldown_until: float = 0.0
     def available(self, now: float) -> bool:
         return now >= self.cooldown_until
-    def report(self, ok: bool) -> None:
+    def report(self, ok: bool, hard: bool = False) -> None:
         if ok:
             self.failures = 0
             self.cooldown_until = 0.0
             return
         self.failures += 1
-        if self.failures >= ROUTE_FAILURE_LIMIT:
+        if hard or self.failures >= ROUTE_FAILURE_LIMIT:
             self.cooldown_until = time.time() + ROUTE_COOLDOWN_S
             self.failures = 0
 def _find_models_file() -> Optional[Path]:
@@ -228,12 +228,14 @@ class ModelRegistry:
                 health = RouteHealth()
                 self._route_health[mid] = health
             return health
-    def report_route(self, mid: str, ok: bool) -> None:
-        self.route_health(mid).report(ok)
-    def ordered_routes(self, card: ModelCard) -> List[Route]:
+    def report_route(self, mid: str, ok: bool, hard: bool = False) -> None:
+        self.route_health(mid).report(ok, hard=hard)
+    def ordered_routes(self, card: ModelCard, prefer_tools: bool = False) -> List[Route]:
         now = time.time()
         healthy = [r for r in card.routes if self.route_health(r.mid).available(now)]
-        if healthy:
-            return healthy
-        return list(card.routes)
+        if not healthy:
+            healthy = list(card.routes)
+        if prefer_tools:
+            healthy.sort(key=lambda r: (0 if "tool-use" in r.features else 1, r.preference, r.provider))
+        return healthy
 REGISTRY = ModelRegistry()

@@ -272,6 +272,8 @@ async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], car
         return
     if not started:
         yield _sse_chunk(cid, created, card.id, {"role": "assistant", "content": ""})
+    if tool_order:
+        finish_reason = "tool_calls"
     yield _sse_chunk(cid, created, card.id, {}, finish_reason or "stop")
     if (body.stream_options or {}).get("include_usage"):
         final_usage = _normalize_usage(usage, prompt_text, "".join(completion_so_far))
