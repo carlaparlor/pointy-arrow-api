@@ -6,7 +6,7 @@ import threading
 import time
 import uuid
 from contextlib import asynccontextmanager
-from typing import Any, AsyncGenerator, Dict, List, Optional, Union
+from typing import Any, AsyncGenerator, Dict, Generator, List, Optional, Tuple, Union
 import anyio
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
@@ -18,6 +18,10 @@ from pa_router import (
     NoCredentialsError,
     PARouter,
 )
+import sys
+if hasattr(sys.stdout, "reconfigure"):
+    sys.stdout.reconfigure(encoding="utf-8", errors="replace")
+    sys.stderr.reconfigure(encoding="utf-8", errors="replace")
 SERVER_NAME = "pointy-arrow-api"
 KEEPALIVE_SECONDS = 4.0
 class ChatMessage(BaseModel):
@@ -114,12 +118,7 @@ def _normalize_usage(usage: Optional[Dict[str, Any]], prompt_text: str, completi
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     router = PARouter()
     app.state.router = router
-    print("refreshing pool...")
-    try:
-        await anyio.to_thread.run_sync(lambda: router.ensure_ready(block=True))
-    except Exception as e:
-        print(f"fetch error: {e}")
-    print(f"{router.pool.working()}/{router.pool.total()} in pool, {len(REGISTRY.group_cards())} models")
+    await anyio.to_thread.run_sync(lambda: router.ensure_ready(block=True))
     yield
 app = FastAPI(title=SERVER_NAME, version="2.0.0", lifespan=lifespan)
 def get_router(request: Request) -> PARouter:
@@ -164,17 +163,7 @@ def _sse_chunk(cid: str, created: int, model_id: str, delta: Dict[str, Any], fin
         "choices": [{"index": 0, "delta": delta, "finish_reason": finish_reason}],
     }
     return f"data: {json.dumps(payload, ensure_ascii=False)}\n\n"
-async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], card: ModelCard, body: ChatCompletionRequest) -> AsyncGenerator[str, None]:
-    cid = f"chatcmpl-{uuid.uuid4().hex}"
-    created = _now()
-    finish_reason: Optional[str] = None
-    usage: Optional[Dict[str, Any]] = None
-    prompt_text = "".join(_flatten_content(m.content) for m in body.messages)
-    completion_so_far: List[str] = []
-    started = False
-    tool_acc: Dict[int, Dict[str, Any]] = {}
-    tool_order: List[int] = []
-    tool_announced: Dict[int, bool] = {}
+def _pump_events(router: PARouter, messages: List[Dict[str, Any]], card: ModelCard, body: ChatCompletionRequest) -> Tuple[Any, object]:
     gen = router.stream(
         messages, model=card.id,
         tools=body.tools, tool_choice=body.tool_choice,
@@ -183,7 +172,7 @@ async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], car
         reasoning_effort=body.reasoning_effort, response_format=body.response_format,
     )
     events: "_queue.Queue[Any]" = _queue.Queue()
-    _sentinel = object()
+    sentinel = object()
     def _pump() -> None:
         try:
             for item in gen:
@@ -191,20 +180,66 @@ async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], car
         except BaseException as exc:
             events.put(("exc", exc))
         finally:
-            events.put(_sentinel)
+            events.put(sentinel)
     threading.Thread(target=_pump, daemon=True).start()
+    return events, sentinel
+async def _sse_from_events(events: Any, sentinel: object, first: Any, cid: str, created: int, card: ModelCard, body: ChatCompletionRequest) -> AsyncGenerator[str, None]:
+    finish_reason: Optional[str] = None
+    usage: Optional[Dict[str, Any]] = None
+    prompt_text = "".join(_flatten_content(m.content) for m in body.messages)
+    completion_so_far: List[str] = []
+    started = False
+    reasoning_buf: List[str] = []
+    emitted_block = False
+    tool_acc: Dict[int, Dict[str, Any]] = {}
+    tool_order: List[int] = []
+    tool_announced: Dict[int, bool] = {}
+    pending: Any = first
+    def _finish() -> str:
+        final_payload: Dict[str, Any] = {
+            "id": cid,
+            "object": "chat.completion.chunk",
+            "created": created,
+            "model": card.id,
+            "choices": [{"index": 0, "delta": {}, "finish_reason": finish_reason or "stop"}],
+        }
+        if (body.stream_options or {}).get("include_usage"):
+            final_payload["usage"] = _normalize_usage(usage, prompt_text, "".join(completion_so_far))
+        return f"data: {json.dumps(final_payload, ensure_ascii=False)}\n\n"
+    def _ensure_block(msg: Optional[str] = None) -> Generator[str, None, None]:
+        nonlocal started, emitted_block
+        if emitted_block:
+            return
+        if not started:
+            yield _sse_chunk(cid, created, card.id, {"role": "assistant", "content": ""})
+            started = True
+        fallback = "".join(reasoning_buf).strip()
+        if not fallback:
+            fallback = msg or "Sorry, the model returned an empty response."
+        completion_so_far.append(fallback)
+        yield _sse_chunk(cid, created, card.id, {"content": fallback})
+        emitted_block = True
     try:
         while True:
-            try:
-                item = await anyio.to_thread.run_sync(functools.partial(events.get, timeout=KEEPALIVE_SECONDS))
-            except _queue.Empty:
-                yield ": keepalive\n\n"
-                continue
-            if item is _sentinel:
+            if pending is None:
+                try:
+                    item = await anyio.to_thread.run_sync(functools.partial(events.get, timeout=KEEPALIVE_SECONDS))
+                except _queue.Empty:
+                    yield ": keepalive\n\n"
+                    continue
+            else:
+                item = pending
+                pending = None
+            if item is sentinel:
                 break
             kind, ev = item
             if kind == "exc":
-                raise ev
+                if not started:
+                    for chunk in _ensure_block(f"Error: {ev}"):
+                        yield chunk
+                yield _finish()
+                yield "data: [DONE]\n\n"
+                return
             etype = ev.get("type")
             if etype == "content":
                 text = ev.get("text", "")
@@ -215,14 +250,11 @@ async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], car
                     yield _sse_chunk(cid, created, card.id, {"role": "assistant", "content": ""})
                 completion_so_far.append(text)
                 yield _sse_chunk(cid, created, card.id, {"content": text})
+                emitted_block = True
             elif etype == "reasoning":
                 text = ev.get("text", "")
-                if not text:
-                    continue
-                if not started:
-                    started = True
-                    yield _sse_chunk(cid, created, card.id, {"role": "assistant", "content": ""})
-                yield _sse_chunk(cid, created, card.id, {"reasoning_content": text})
+                if text:
+                    reasoning_buf.append(text)
             elif etype == "tool_call_delta":
                 if not started:
                     started = True
@@ -250,47 +282,66 @@ async def _stream_response(router: PARouter, messages: List[Dict[str, Any]], car
                     delta = {"tool_calls": [{"index": out_index, "function": {"arguments": ev.get("arguments") or ""}}]}
                 yield _sse_chunk(cid, created, card.id, delta)
                 finish_reason = "tool_calls"
+                emitted_block = True
             elif etype == "usage":
                 usage = ev.get("usage")
             elif etype == "finish":
                 finish_reason = ev.get("finish_reason") or finish_reason
-    except NoCredentialsError as exc:
-        yield f"data: {json.dumps({'error': {'message': str(exc), 'type': 'server_error', 'code': 'no_credentials'}})}\n\n"
-        yield "data: [DONE]\n\n"
-        return
-    except AllCredentialsBusyError as exc:
-        yield f"data: {json.dumps({'error': {'message': str(exc), 'type': 'server_error', 'code': 'all_credentials_busy'}})}\n\n"
-        yield "data: [DONE]\n\n"
-        return
     except Exception as exc:
-        if started:
-            yield f"data: {json.dumps({'error': {'message': str(exc), 'type': 'server_error', 'code': 'upstream_error'}})}\n\n"
-            yield "data: [DONE]\n\n"
-            return
-        yield f"data: {json.dumps({'error': {'message': str(exc), 'type': 'server_error', 'code': 'upstream_error'}})}\n\n"
+        if not started:
+            for chunk in _ensure_block():
+                yield chunk
+        yield _finish()
         yield "data: [DONE]\n\n"
         return
-    if not started:
-        yield _sse_chunk(cid, created, card.id, {"role": "assistant", "content": ""})
+    if not emitted_block:
+        for chunk in _ensure_block():
+            yield chunk
     if tool_order:
         finish_reason = "tool_calls"
-    yield _sse_chunk(cid, created, card.id, {}, finish_reason or "stop")
-    if (body.stream_options or {}).get("include_usage"):
-        final_usage = _normalize_usage(usage, prompt_text, "".join(completion_so_far))
-        yield f"data: {json.dumps({'id': cid, 'object': 'chat.completion.chunk', 'created': created, 'model': card.id, 'choices': [], 'usage': final_usage}, ensure_ascii=False)}\n\n"
+    yield _finish()
     yield "data: [DONE]\n\n"
 @app.post("/v1/chat/completions")
 @app.post("/chat/completions")
 @app.post("/api/v1/chat/completions")
 async def chat_completions(request: Request, body: ChatCompletionRequest):
+    dump = body.model_dump(exclude_unset=True)
+    dump["messages"] = [
+        {**m, "content": (_flatten_content(m.get("content")) or "")[:500] + ("..." if len(_flatten_content(m.get("content"))) > 500 else "")}
+        for m in (dump.get("messages") or [])
+    ]
+    try:
+        req_line = json.dumps(dump, ensure_ascii=False, default=str)[:8000]
+    except Exception:
+        req_line = str(dump)[:8000]
     router = get_router(request)
     card = REGISTRY.resolve(body.model)
     if card is None:
+        if REGISTRY.group_cards():
+            return _error_body(f"The model '{body.model}' does not exist", "model_not_found", 404)
         return _error_body("model registry is empty", "no_models", 503)
     messages = _messages_to_dicts(body.messages)
     if body.stream:
+        events, sentinel = await anyio.to_thread.run_sync(lambda: _pump_events(router, messages, card, body))
+        try:
+            first = await anyio.to_thread.run_sync(functools.partial(events.get, timeout=90.0))
+        except _queue.Empty:
+            first = None
+        if first is not None:
+            if first is sentinel:
+                return _error_body("upstream returned an empty stream", "upstream_empty", 502)
+            kind, ev = first
+            if kind == "exc":
+                exc = ev
+                if isinstance(exc, NoCredentialsError):
+                    return _error_body(str(exc), "no_credentials", 503)
+                if isinstance(exc, AllCredentialsBusyError):
+                    return _error_body(str(exc), "all_credentials_busy", 429)
+                return _error_body(str(exc), "upstream_error", 502)
+        cid = f"chatcmpl-{uuid.uuid4().hex}"
+        created = _now()
         return StreamingResponse(
-            _stream_response(router, messages, card, body),
+            _sse_from_events(events, sentinel, first, cid, created, card, body),
             media_type="text/event-stream",
             headers={"Cache-Control": "no-cache", "X-Accel-Buffering": "no"},
         )
@@ -305,11 +356,11 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
             )
         )
     except NoCredentialsError as exc:
-        return _error_body(str(exc), "no_credentials", 503)
+            return _error_body(str(exc), "no_credentials", 503)
     except AllCredentialsBusyError as exc:
-        return _error_body(str(exc), "all_credentials_busy", 429)
+            return _error_body(str(exc), "all_credentials_busy", 429)
     except Exception as exc:
-        return _error_body(str(exc), "upstream_error", 502)
+            return _error_body(str(exc), "upstream_error", 502)
     prompt_text = "".join(_flatten_content(m.content) for m in body.messages)
     completion_text = result["text"]
     usage = _normalize_usage(result.get("usage"), prompt_text, completion_text)

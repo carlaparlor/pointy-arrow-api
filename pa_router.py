@@ -37,6 +37,7 @@ RETRY_BASE_DELAY = 1.0
 RETRY_MAX_DELAY = 20.0
 MAX_MESSAGES = 40
 MESSAGE_TRIM_TARGET = 30
+PROMPT_TOKEN_CAP = 30000
 MAX_STREAM_EVENTS = 1500
 REPEAT_STREAK_LIMIT = 6
 class _StreamError(RuntimeError):
@@ -99,10 +100,24 @@ def to_gratisfy_messages(messages: List[Dict[str, Any]]) -> List[Dict[str, Any]]
         out.append({"role": role, "content": _flatten_content(content)})
     return out
 def _tool_spec_text(tools: List[Any], tool_choice: Optional[Any]) -> str:
-    spec = json.dumps(tools, ensure_ascii=False)[:4000]
-    if len(spec) >= 4000:
-        spec = spec[:3997] + "..."
-    text = f"Available tools: {spec}"
+    full = json.dumps(tools, ensure_ascii=False)
+    if len(full) <= 6000:
+        spec = full
+    else:
+        lines: List[str] = []
+        for t in tools:
+            if not isinstance(t, dict):
+                continue
+            fn = t.get("function") if isinstance(t.get("function"), dict) else {}
+            name = fn.get("name") or t.get("name") or "tool"
+            desc = str(fn.get("description") or "")[:200]
+            params = fn.get("parameters") if isinstance(fn.get("parameters"), dict) else {}
+            required = params.get("required") or []
+            if not isinstance(required, list):
+                required = []
+            lines.append(f"{name}({', '.join(str(r) for r in required)}) - {desc}")
+        spec = "\n".join(lines)[:6000]
+    text = f"Available tools:\n{spec}"
     if isinstance(tool_choice, dict):
         name = (tool_choice.get("function") or {}).get("name")
         if name:
@@ -110,19 +125,24 @@ def _tool_spec_text(tools: List[Any], tool_choice: Optional[Any]) -> str:
     elif tool_choice == "required":
         text += "\nYou MUST call one or more tools."
     return text
-def _emulation_messages(messages: List[Dict[str, Any]], tools: List[Any], tool_choice: Optional[Any]) -> List[Dict[str, Any]]:
-    instruction = (
-        "\n\n[TOOL CALLING MODE]\n"
-        + _tool_spec_text(tools, tool_choice)
-        + "\n\nIf you need to call a tool, respond with ONLY a single JSON object and no other text, no markdown fences:\n"
-        '{"tool_call": {"name": "<exact tool name>", "arguments": {<arguments matching the tool schema>}}}\n\n'
-        "If no tool call is needed, answer normally as plain text."
-    )
-    out = [dict(m) for m in messages]
-    if out and out[0].get("role") == "system":
-        out[0] = {"role": "system", "content": str(out[0].get("content") or "") + instruction}
+def _emulation_messages(messages: List[Dict[str, Any]], tools: List[Any], tool_choice: Optional[Any], followup: bool = False) -> List[Dict[str, Any]]:
+    if followup:
+        instruction = (
+            "\n\nYour previous reply did not include a tool call, but the task requires inspecting the repository.\n"
+            "If a tool is needed, output ONLY this JSON object and nothing else:\n"
+            '{"tool_call": {"name": "<exact tool name>", "arguments": {<arguments>}}}\n'
+            "Do not narrate, do not explain, do not use markdown fences."
+        )
     else:
-        out.insert(0, {"role": "system", "content": instruction})
+        instruction = (
+            "\n\n[TOOL CALLING MODE]\n"
+            + _tool_spec_text(tools, tool_choice)
+            + "\n\nIf you need to call a tool, respond with ONLY a single JSON object and no other text, no markdown fences:\n"
+            '{"tool_call": {"name": "<exact tool name>", "arguments": {<arguments matching the tool schema>}}}\n\n'
+            "If no tool call is needed, answer normally as plain text."
+        )
+    out = [dict(m) for m in messages]
+    out.append({"role": "system", "content": instruction})
     return out
 def _looks_like_tool_call(obj: Any) -> bool:
     items = obj if isinstance(obj, list) else [obj]
@@ -252,10 +272,12 @@ class _GratisfyClient:
             temperature=temperature, top_p=top_p, max_tokens=max_tokens,
             reasoning_effort=reasoning_effort, response_format=response_format,
         )
+        t0 = time.time()
         with self.session.post(
             CHAT_ENDPOINT, headers=self._headers(), json=payload,
             stream=True, timeout=self.timeout,
         ) as resp:
+            resp.encoding = "utf-8"
             if resp.status_code != 200:
                 self._raise_for_rejection(resp)
             event_count = 0
@@ -461,7 +483,7 @@ class CredentialPool:
                     for s in self._states
                 ],
             }
-    def acquire(self, exclude_ids: Optional[set] = None) -> Optional[CredentialState]:
+    def acquire(self, exclude_ids: Optional[set] = None, allow_cooldown: bool = False) -> Optional[CredentialState]:
         now = time.time()
         exclude_ids = exclude_ids or set()
         with self._lock:
@@ -469,17 +491,27 @@ class CredentialPool:
             for _ in range(n):
                 idx = next(self._cycle)
                 state = self._states[idx]
-                if not state.available(now) or state.credential.id in exclude_ids:
+                if state.credential.id in exclude_ids:
+                    continue
+                if not allow_cooldown and not state.available(now):
+                    continue
+                if allow_cooldown and state.depleted:
                     continue
                 state.last_used = now
                 picked = state
                 break
             else:
                 picked = None
-        if self.working() <= MIN_WORKING:
+        if self.available() < TARGET_WORKING:
             self.maybe_harvest()
         return picked
-    def report_result(self, state: CredentialState, ok: bool, depleted: bool = False, error: Optional[str] = None) -> None:
+    def available(self) -> int:
+        now = time.time()
+        with self._lock:
+            return sum(1 for s in self._states if s.available(now))
+    def report_result(self, state: CredentialState, ok: bool, depleted: bool = False, error: Optional[str] = None, neutral: bool = False) -> None:
+        if neutral:
+            return
         changed = False
         with self._lock:
             if ok:
@@ -500,7 +532,7 @@ class CredentialPool:
                 self._states = [s for s in self._states if not s.depleted]
                 self._rebuild_cycle()
                 self._save()
-        if self.working() <= MIN_WORKING:
+        if self.available() < TARGET_WORKING:
             self.maybe_harvest()
     def save_tokens(self, state: CredentialState) -> None:
         self._save()
@@ -510,14 +542,15 @@ class CredentialPool:
         with self._lock:
             if self._harvesting:
                 return
-            working = sum(1 for s in self._states if not s.depleted)
-            if working >= TARGET_WORKING or len(self._states) >= MAX_TOTAL:
+            now = time.time()
+            avail = sum(1 for s in self._states if s.available(now))
+            if avail >= TARGET_WORKING or len(self._states) >= MAX_TOTAL:
                 return
             self._harvesting = True
         threading.Thread(target=self._harvest_loop, daemon=True).start()
     def _harvest_loop(self) -> None:
         try:
-            while self.working() < TARGET_WORKING and self.total() < MAX_TOTAL:
+            while self.available() < TARGET_WORKING and self.total() < MAX_TOTAL:
                 try:
                     cred = harvest_one()
                 except Exception:
@@ -556,7 +589,6 @@ class CredentialPool:
                     try:
                         cred = harvest_one()
                     except Exception as exc:
-                        print(f"harvest error: {exc}")
                         break
                     if cred.is_valid():
                         with self._lock:
@@ -594,6 +626,25 @@ class PARouter:
             system_msgs = [m for m in gratisfy_messages if m.get("role") == "system"]
             rest = [m for m in gratisfy_messages if m.get("role") != "system"]
             gratisfy_messages = system_msgs + rest[-MESSAGE_TRIM_TARGET:]
+        total_chars = sum(len(str(m.get("content") or "")) for m in gratisfy_messages)
+        if total_chars > PROMPT_TOKEN_CAP * 4:
+            system_msgs = [m for m in gratisfy_messages if m.get("role") == "system"]
+            rest = [m for m in gratisfy_messages if m.get("role") != "system"]
+            budget = PROMPT_TOKEN_CAP * 4
+            per_system = budget // max(1, len(system_msgs))
+            kept_system = []
+            for m in system_msgs:
+                text = str(m.get("content") or "")
+                if len(text) > per_system:
+                    text = text[:per_system]
+                kept_system.append({**m, "content": text})
+            tail: List[Dict[str, Any]] = []
+            for m in reversed(rest):
+                text = str(m.get("content") or "")
+                tail.append({**m, "content": text[:4096]})
+                if sum(len(str(t.get("content") or "")) for t in tail) >= budget // 2:
+                    break
+            gratisfy_messages = kept_system + list(reversed(tail))
         if self.pool.total() == 0:
             self.pool.ensure_ready(block=True)
         if self.pool.total() == 0:
@@ -603,75 +654,42 @@ class PARouter:
             )
         last_error: Optional[Exception] = None
         emulate_allowed = bool(tools) and tool_choice != "none"
-        for route in self.registry.ordered_routes(card, prefer_tools=bool(tools)):
-            for mode in (("native", "emulated") if emulate_allowed else ("native",)):
-                if mode == "native" and tools and "tool-use" not in route.features:
-                    continue
-                if mode == "emulated" and not emulate_allowed:
-                    continue
-                emitted = False
-                for _attempt in range(MAX_CRED_ATTEMPTS):
-                    state = self.pool.acquire()
-                    if state is None:
-                        if any(not s.depleted for s in self.pool._states):
-                            raise AllCredentialsBusyError("All working credentials are cooling down; try again shortly.")
-                        raise NoCredentialsError("No credentials available.")
-                    client = _GratisfyClient(state.credential)
-                    try:
-                        if mode == "native" and not tools:
-                            for ev in client.stream(
-                                gratisfy_messages, route,
-                                tools=tools, tool_choice=tool_choice,
-                                temperature=temperature, top_p=top_p, max_tokens=max_tokens,
-                                reasoning_effort=reasoning_effort, response_format=response_format,
-                            ):
-                                etype = ev.get("type")
-                                if etype == "error":
-                                    msg = str(ev.get("message", "upstream error"))
-                                    if _looks_route_scoped(msg):
-                                        raise _RouteRejected(msg)
-                                    raise _StreamError(msg)
-                                if not emitted:
-                                    emitted = True
-                                    yield {
-                                        "type": "route",
-                                        "credential_id": state.credential.id,
-                                        "mid": route.mid,
-                                        "pid": route.pid,
-                                        "provider": route.provider,
-                                        "model": card.id,
-                                    }
-                                yield ev
-                            self.pool.report_result(state, ok=True)
-                            self.pool.save_tokens(state)
-                            self.registry.report_route(route.mid, ok=True)
-                            return
-                        if mode == "native":
-                            buf: List[Dict[str, Any]] = []
-                            tool_buf: List[Dict[str, Any]] = []
-                            usage_buf: Optional[Dict[str, Any]] = None
-                            finish_buf: Optional[str] = None
-                            for ev in client.stream(
-                                gratisfy_messages, route,
-                                tools=tools, tool_choice=tool_choice,
-                                temperature=temperature, top_p=top_p, max_tokens=max_tokens,
-                                reasoning_effort=reasoning_effort, response_format=response_format,
-                            ):
-                                etype = ev.get("type")
-                                if etype == "error":
-                                    msg = str(ev.get("message", "upstream error"))
-                                    if _looks_route_scoped(msg):
-                                        raise _RouteRejected(msg)
-                                    raise _StreamError(msg)
-                                if etype == "content":
-                                    buf.append(ev)
-                                elif etype == "tool_call_delta":
-                                    tool_buf.append(ev)
-                                elif etype == "usage":
-                                    usage_buf = ev.get("usage")
-                                elif etype == "finish":
-                                    finish_buf = ev.get("finish_reason")
-                                elif etype == "reasoning":
+        routing_pass = 0
+        while True:
+            routing_pass += 1
+            saw_transient = False
+            saw_hard = False
+            for route in self.registry.ordered_routes(card, prefer_tools=bool(tools)):
+                for mode in (("native", "emulated") if emulate_allowed else ("native",)):
+                    if mode == "native" and tools and "tool-use" not in route.features:
+                        continue
+                    if mode == "emulated" and not emulate_allowed:
+                        continue
+                    emitted = False
+                    for _attempt in range(MAX_CRED_ATTEMPTS):
+                        state = self.pool.acquire(allow_cooldown=routing_pass > 1)
+                        if state is None and any(not s.depleted for s in self.pool._states):
+                            time.sleep(5.0)
+                            state = self.pool.acquire(allow_cooldown=routing_pass > 1)
+                        if state is None:
+                            if any(not s.depleted for s in self.pool._states):
+                                raise AllCredentialsBusyError("All working credentials are cooling down; try again shortly.")
+                            raise NoCredentialsError("No credentials available.")
+                        client = _GratisfyClient(state.credential)
+                        try:
+                            if mode == "native" and not tools:
+                                for ev in client.stream(
+                                    gratisfy_messages, route,
+                                    tools=tools, tool_choice=tool_choice,
+                                    temperature=temperature, top_p=top_p, max_tokens=max_tokens,
+                                    reasoning_effort=reasoning_effort, response_format=response_format,
+                                ):
+                                    etype = ev.get("type")
+                                    if etype == "error":
+                                        msg = str(ev.get("message", "upstream error"))
+                                        if _looks_route_scoped(msg):
+                                            raise _RouteRejected(msg)
+                                        raise _StreamError(msg)
                                     if not emitted:
                                         emitted = True
                                         yield {
@@ -683,137 +701,183 @@ class PARouter:
                                             "model": card.id,
                                         }
                                     yield ev
+                                self.pool.report_result(state, ok=True)
+                                self.pool.save_tokens(state)
+                                self.registry.report_route(route.mid, ok=True)
+                                return
+                            if mode == "native":
+                                buf: List[Dict[str, Any]] = []
+                                tool_buf: List[Dict[str, Any]] = []
+                                reason_buf: List[Dict[str, Any]] = []
+                                usage_buf: Optional[Dict[str, Any]] = None
+                                finish_buf: Optional[str] = None
+                                for ev in client.stream(
+                                    gratisfy_messages, route,
+                                    tools=tools, tool_choice=tool_choice,
+                                    temperature=temperature, top_p=top_p, max_tokens=max_tokens,
+                                    reasoning_effort=reasoning_effort, response_format=response_format,
+                                ):
+                                    etype = ev.get("type")
+                                    if etype == "error":
+                                        msg = str(ev.get("message", "upstream error"))
+                                        if _looks_route_scoped(msg):
+                                            raise _RouteRejected(msg)
+                                        raise _StreamError(msg)
+                                    if etype == "content":
+                                        buf.append(ev)
+                                    elif etype == "tool_call_delta":
+                                        tool_buf.append(ev)
+                                    elif etype == "usage":
+                                        usage_buf = ev.get("usage")
+                                    elif etype == "finish":
+                                        finish_buf = ev.get("finish_reason")
+                                    elif etype == "reasoning":
+                                        reason_buf.append(ev)
+                                self.pool.report_result(state, ok=True)
+                                self.pool.save_tokens(state)
+                                self.registry.report_route(route.mid, ok=True)
+                                if tool_buf:
+                                    if not emitted:
+                                        emitted = True
+                                        yield {
+                                            "type": "route",
+                                            "credential_id": state.credential.id,
+                                            "mid": route.mid,
+                                            "pid": route.pid,
+                                            "provider": route.provider,
+                                            "model": card.id,
+                                        }
+                                    for ev in reason_buf:
+                                        yield ev
+                                    for ev in buf:
+                                        yield ev
+                                    for ev in tool_buf:
+                                        yield ev
+                                    if usage_buf is not None:
+                                        yield {"type": "usage", "usage": usage_buf}
+                                    yield {"type": "finish", "finish_reason": "tool_calls"}
+                                    return
+                                if finish_buf == "tool_calls":
+                                    raise _RouteRejected("native tool stream produced no tool deltas")
+                                break
+                            calls: Optional[List[Dict[str, Any]]] = None
+                            em_usage: Optional[Dict[str, Any]] = None
+                            em_finish: Optional[str] = None
+                            preamble = ""
+                            last_text = ""
+                            for followup in (False, True):
+                                text_buf: List[str] = []
+                                reason_buf: List[str] = []
+                                for ev in client.stream(
+                                    _emulation_messages(gratisfy_messages, tools, tool_choice, followup=followup), route,
+                                    temperature=temperature, top_p=top_p, max_tokens=max_tokens,
+                                    reasoning_effort=reasoning_effort, response_format=response_format,
+                                ):
+                                    etype = ev.get("type")
+                                    if etype == "error":
+                                        msg = str(ev.get("message", "upstream error"))
+                                        if _looks_route_scoped(msg):
+                                            raise _RouteRejected(msg)
+                                        raise _StreamError(msg)
+                                    if etype == "content":
+                                        text_buf.append(ev.get("text", ""))
+                                    elif etype == "usage":
+                                        em_usage = ev.get("usage")
+                                    elif etype == "finish":
+                                        em_finish = ev.get("finish_reason")
+                                    elif etype == "reasoning":
+                                        reason_buf.append(ev.get("text", ""))
+                                last_text = "".join(text_buf)
+                                calls = _parse_plaintext_tool_calls(last_text)
+                                if calls is None:
+                                    calls = _parse_plaintext_tool_calls("".join(reason_buf))
+                                if calls is not None:
+                                    json_pos = _json_position(last_text) if _parse_plaintext_tool_calls(last_text) else None
+                                    preamble = last_text[:json_pos].strip() if json_pos is not None else ""
+                                    break
                             self.pool.report_result(state, ok=True)
                             self.pool.save_tokens(state)
                             self.registry.report_route(route.mid, ok=True)
-                            if tool_buf:
-                                if not emitted:
-                                    emitted = True
-                                    yield {
-                                        "type": "route",
-                                        "credential_id": state.credential.id,
-                                        "mid": route.mid,
-                                        "pid": route.pid,
-                                        "provider": route.provider,
-                                        "model": card.id,
-                                    }
-                                for ev in buf:
-                                    yield ev
-                                for ev in tool_buf:
-                                    yield ev
-                                if usage_buf is not None:
-                                    yield {"type": "usage", "usage": usage_buf}
-                                yield {"type": "finish", "finish_reason": "tool_calls"}
-                                return
-                            if finish_buf == "tool_calls":
-                                raise _RouteRejected("native tool stream produced no tool deltas")
-                            break
-                        text_buf: List[str] = []
-                        em_usage: Optional[Dict[str, Any]] = None
-                        em_finish: Optional[str] = None
-                        for ev in client.stream(
-                            _emulation_messages(gratisfy_messages, tools, tool_choice), route,
-                            temperature=temperature, top_p=top_p, max_tokens=max_tokens,
-                            reasoning_effort=reasoning_effort, response_format=response_format,
-                        ):
-                            etype = ev.get("type")
-                            if etype == "error":
-                                msg = str(ev.get("message", "upstream error"))
-                                if _looks_route_scoped(msg):
-                                    raise _RouteRejected(msg)
-                                raise _StreamError(msg)
-                            if etype == "content":
-                                text_buf.append(ev.get("text", ""))
-                            elif etype == "usage":
-                                em_usage = ev.get("usage")
-                            elif etype == "finish":
-                                em_finish = ev.get("finish_reason")
-                            elif etype == "reasoning":
-                                if not emitted:
-                                    emitted = True
-                                    yield {
-                                        "type": "route",
-                                        "credential_id": state.credential.id,
-                                        "mid": route.mid,
-                                        "pid": route.pid,
-                                        "provider": route.provider,
-                                        "model": card.id,
-                                    }
-                                yield ev
-                        self.pool.report_result(state, ok=True)
-                        self.pool.save_tokens(state)
-                        self.registry.report_route(route.mid, ok=True)
-                        full_text = "".join(text_buf)
-                        calls = _parse_plaintext_tool_calls(full_text)
-                        if not emitted:
-                            emitted = True
-                            yield {
-                                "type": "route",
-                                "credential_id": state.credential.id,
-                                "mid": route.mid,
-                                "pid": route.pid,
-                                "provider": route.provider,
-                                "model": card.id,
-                            }
-                        if calls:
-                            json_pos = _json_position(full_text)
-                            preamble = full_text[:json_pos].strip() if json_pos is not None else ""
-                            if preamble:
-                                yield {"type": "content", "text": preamble}
-                            for i, call in enumerate(calls):
+                            if not emitted:
+                                emitted = True
                                 yield {
-                                    "type": "tool_call_delta",
-                                    "index": i,
-                                    "id": f"call_{uuid.uuid4().hex[:24]}",
-                                    "name": call["name"],
-                                    "arguments": call["arguments"],
+                                    "type": "route",
+                                    "credential_id": state.credential.id,
+                                    "mid": route.mid,
+                                    "pid": route.pid,
+                                    "provider": route.provider,
+                                    "model": card.id,
                                 }
-                            if em_usage is not None:
-                                yield {"type": "usage", "usage": em_usage}
-                            yield {"type": "finish", "finish_reason": "tool_calls"}
-                        else:
-                            if full_text:
-                                yield {"type": "content", "text": full_text}
-                            if em_usage is not None:
-                                yield {"type": "usage", "usage": em_usage}
-                            yield {"type": "finish", "finish_reason": em_finish or "stop"}
-                        return
-                    except _RouteRejected as exc:
-                        last_error = exc
-                        hard = _is_tool_error(str(exc))
-                        self.registry.report_route(route.mid, ok=False, hard=hard)
-                        break
-                    except CredentialHttpError as exc:
-                        depleted = exc.status in (401, 403)
-                        self.pool.report_result(state, ok=False, depleted=depleted, error=f"cred http {exc.status}")
-                        last_error = exc
-                        if emitted:
-                            raise
-                        _sleep_jitter(_attempt)
-                        continue
-                    except requests.HTTPError as exc:
-                        code = exc.response.status_code if exc.response is not None else None
-                        depleted = code in (401, 403)
-                        self.pool.report_result(state, ok=False, depleted=depleted, error=f"http {code}")
-                        last_error = exc
-                        if emitted:
-                            raise
-                        _sleep_jitter(_attempt, exc.response.headers.get("Retry-After") if exc.response is not None else None)
-                        continue
-                    except _StreamError as exc:
-                        self.pool.report_result(state, ok=False, depleted=False, error=str(exc))
-                        last_error = exc
-                        if emitted:
-                            raise
-                        _sleep_jitter(_attempt)
-                        continue
-                    except Exception as exc:
-                        self.pool.report_result(state, ok=False, depleted=False, error=str(exc))
-                        last_error = exc
-                        if emitted:
-                            raise
-                        _sleep_jitter(_attempt)
-                        continue
+                            if calls:
+                                if preamble:
+                                    yield {"type": "content", "text": preamble}
+                                for i, call in enumerate(calls):
+                                    yield {
+                                        "type": "tool_call_delta",
+                                        "index": i,
+                                        "id": f"call_{uuid.uuid4().hex[:24]}",
+                                        "name": call["name"],
+                                        "arguments": call["arguments"],
+                                    }
+                                if em_usage is not None:
+                                    yield {"type": "usage", "usage": em_usage}
+                                yield {"type": "finish", "finish_reason": "tool_calls"}
+                            else:
+                                if "".join(reason_buf):
+                                    yield {"type": "reasoning", "text": "".join(reason_buf)}
+                                if last_text:
+                                    yield {"type": "content", "text": last_text}
+                                if em_usage is not None:
+                                    yield {"type": "usage", "usage": em_usage}
+                                yield {"type": "finish", "finish_reason": em_finish or "stop"}
+                            return
+                        except _RouteRejected as exc:
+                            last_error = exc
+                            hard = _is_tool_error(str(exc))
+                            saw_hard = saw_hard or hard
+                            saw_transient = saw_transient or not hard
+                            self.registry.report_route(route.mid, ok=False, hard=hard)
+                            break
+                        except CredentialHttpError as exc:
+                            depleted = exc.status in (401, 403)
+                            rate_limited = exc.status == 429
+                            saw_transient = True
+                            self.pool.report_result(state, ok=False, depleted=depleted, error=f"cred http {exc.status}", neutral=not (depleted or rate_limited))
+                            last_error = exc
+                            if emitted:
+                                raise
+                            _sleep_jitter(_attempt)
+                            continue
+                        except requests.HTTPError as exc:
+                            code = exc.response.status_code if exc.response is not None else None
+                            depleted = code in (401, 403)
+                            rate_limited = code == 429
+                            saw_transient = True
+                            self.pool.report_result(state, ok=False, depleted=depleted, error=f"http {code}", neutral=not (depleted or rate_limited))
+                            last_error = exc
+                            if emitted:
+                                raise
+                            _sleep_jitter(_attempt, exc.response.headers.get("Retry-After") if exc.response is not None else None)
+                            continue
+                        except _StreamError as exc:
+                            saw_transient = True
+                            self.pool.report_result(state, ok=False, depleted=False, error=str(exc), neutral=True)
+                            last_error = exc
+                            if emitted:
+                                raise
+                            _sleep_jitter(_attempt)
+                            continue
+                        except Exception as exc:
+                            saw_transient = True
+                            self.pool.report_result(state, ok=False, depleted=False, error=str(exc), neutral=True)
+                            last_error = exc
+                            if emitted:
+                                raise
+                            _sleep_jitter(_attempt)
+                            continue
+            if routing_pass >= 2 or saw_hard or not saw_transient:
+                break
+            time.sleep(5.0)
         raise RuntimeError(f"All routes for '{card.id}' failed. Last error: {last_error}")
     def collect(self, messages: List[Dict[str, Any]], model: Optional[str] = None, **kwargs: Any) -> Dict[str, Any]:
         text_parts: List[str] = []
@@ -886,6 +950,7 @@ def _looks_route_scoped(message: str) -> bool:
         "an error occurred", "finish_reason=error",
         "tool choice is none", "tool_use_failed", "tool use failed",
         "function calling", "tool calling", "not supported",
+        "insufficient credits", "input too long",
     )
     return any(m in low for m in markers)
 def _is_tool_error(message: str) -> bool:
@@ -893,6 +958,7 @@ def _is_tool_error(message: str) -> bool:
     markers = (
         "tool choice is none", "tool_use_failed", "tool use failed",
         "function calling", "tool calling", "not supported",
+        "insufficient credits", "input too long",
     )
     return any(m in low for m in markers)
 def _is_gratisfy_error_text(text: str) -> bool:

@@ -198,7 +198,7 @@ class ModelRegistry:
         cards = self.cards
         if not cards:
             return None
-        for preferred in ("gpt-oss-120b", "glm-5-2", "claude-haiku-4-5"):
+        for preferred in ("glm-5-2", "kimi-k3", "grok-4-5"):
             card = self.resolve(preferred, strict=True)
             if card:
                 return card
