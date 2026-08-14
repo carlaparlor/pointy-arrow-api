@@ -11,7 +11,7 @@ import anyio
 from fastapi import FastAPI, Request
 from fastapi.responses import JSONResponse, StreamingResponse
 from pydantic import BaseModel
-from pa_models import ModelCard, REGISTRY
+from pa_models import ModelCard, Route, REGISTRY
 from pa_router import (
     AllCredentialsBusyError,
     CredentialPool,
@@ -50,6 +50,26 @@ def _error_body(message: str, code: str, status: int) -> JSONResponse:
         status_code=status,
         content={"error": {"message": message, "type": "server_error", "code": code}},
     )
+def _route_info(route: Route) -> Dict[str, Any]:
+    info: Dict[str, Any] = {
+        "provider": route.provider,
+        "alias": route.raw_id,
+        "id": route.mid,
+        "label": route.label,
+    }
+    if route.context_window:
+        info["context_window"] = route.context_window
+    if route.max_output_tokens:
+        info["max_output_tokens"] = route.max_output_tokens
+    if route.features:
+        info["features"] = list(route.features)
+    if route.input_modalities:
+        info["input_modalities"] = list(route.input_modalities)
+    if route.output_modalities:
+        info["output_modalities"] = list(route.output_modalities)
+    if route.supported_parameters:
+        info["supported_parameters"] = list(route.supported_parameters)
+    return info
 def _model_card(card: ModelCard) -> Dict[str, Any]:
     out: Dict[str, Any] = {
         "id": card.id,
@@ -60,10 +80,8 @@ def _model_card(card: ModelCard) -> Dict[str, Any]:
     if card.context_window:
         out["context_window"] = card.context_window
     out["label"] = card.label
-    if card.kind == "group":
-        out["providers"] = [r.provider for r in card.routes]
-    else:
-        out["providers"] = [card.routes[0].provider]
+    out["providers"] = [_route_info(r) for r in card.routes]
+    if card.kind != "group":
         out["group"] = card.routes[0].slug
     return out
 def _flatten_content(content: Union[str, List[Dict[str, Any]], None]) -> str:
@@ -126,7 +144,7 @@ def get_router(request: Request) -> PARouter:
 @app.get("/v1/models")
 @app.get("/models")
 async def list_models() -> Dict[str, Any]:
-    cards = REGISTRY.group_cards() + [c for c in REGISTRY.cards if c.kind == "pinned"]
+    cards = REGISTRY.group_cards()
     return {"object": "list", "data": [_model_card(c) for c in cards]}
 @app.get("/v1/models/{model_id:path}")
 @app.get("/models/{model_id:path}")
