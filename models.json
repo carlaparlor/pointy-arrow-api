@@ -1,8 +1,37 @@
 {
   "version": 1,
-  "updated_at": "2026-08-21T02:48:14.069890+00:00",
-  "count": 68,
+  "updated_at": "2026-08-27T05:20:28.537348+00:00",
+  "count": 37,
   "models": [
+    {
+      "id": "aqua/deepseek-v4",
+      "provider": "aqua",
+      "model": "deepseek-v4",
+      "pid": "DeepSeek V4 Flash",
+      "context_window": 200000,
+      "max_output_tokens": 0,
+      "features": [
+        "tool-use",
+        "chat"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream",
+        "max_tokens",
+        "temperature",
+        "top_p",
+        "stop",
+        "tools",
+        "tool_choice"
+      ],
+      "label": "DeepSeek V4 Flash"
+    },
     {
       "id": "aqua/deepseek-v4-pro",
       "provider": "aqua",
@@ -30,36 +59,7 @@
         "tools",
         "tool_choice"
       ],
-      "label": "DeepSeek V4 Pro"
-    },
-    {
-      "id": "aqua/gemini-3.1-pro",
-      "provider": "aqua",
-      "model": "gemini-3.1-pro",
-      "pid": "Gemini 3.1 Pro",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Gemini 3.1 Pro"
+      "label": "DeepSeek v4 Pro"
     },
     {
       "id": "aqua/gemini-3.5",
@@ -120,10 +120,10 @@
       "label": "Gemini 3.6 Flash"
     },
     {
-      "id": "aqua/gpt-5.4",
+      "id": "aqua/glm-5.2",
       "provider": "aqua",
-      "model": "gpt-5.4",
-      "pid": "GPT 5.4",
+      "model": "glm-5.2",
+      "pid": "GLM 5.2",
       "context_window": 200000,
       "max_output_tokens": 0,
       "features": [
@@ -146,65 +146,7 @@
         "tools",
         "tool_choice"
       ],
-      "label": "GPT 5.4"
-    },
-    {
-      "id": "aqua/gpt-5.4-mini",
-      "provider": "aqua",
-      "model": "gpt-5.4-mini",
-      "pid": "GPT-5.4 Mini",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "GPT 5.4 Mini"
-    },
-    {
-      "id": "aqua/gpt-5.5",
-      "provider": "aqua",
-      "model": "gpt-5.5",
-      "pid": "GPT 5.5",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "GPT 5.5"
+      "label": "GLM 5.2"
     },
     {
       "id": "aqua/gpt-5.6-luna",
@@ -265,35 +207,6 @@
       "label": "GPT 5.6 Sol"
     },
     {
-      "id": "aqua/gpt-5.6-terra",
-      "provider": "aqua",
-      "model": "gpt-5.6-terra",
-      "pid": "GPT-5.6 Terra",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "GPT 5.6 Terra"
-    },
-    {
       "id": "aqua/grok-4.5",
       "provider": "aqua",
       "model": "grok-4.5",
@@ -352,10 +265,10 @@
       "label": "Grok 4.6"
     },
     {
-      "id": "aqua/kimi-k2.6",
+      "id": "aqua/kimi-k3",
       "provider": "aqua",
-      "model": "kimi-k2.6",
-      "pid": "Kimi K2.6",
+      "model": "kimi-k3",
+      "pid": "Kimi K3",
       "context_window": 200000,
       "max_output_tokens": 0,
       "features": [
@@ -378,210 +291,7 @@
         "tools",
         "tool_choice"
       ],
-      "label": "Kimi K2.6"
-    },
-    {
-      "id": "aqua/kimi-k2.7",
-      "provider": "aqua",
-      "model": "kimi-k2.7",
-      "pid": "Kimi K2.7 Code",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Kimi K2.7 Code"
-    },
-    {
-      "id": "aqua/laguna",
-      "provider": "aqua",
-      "model": "laguna",
-      "pid": "Laguna S 2.1",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Laguna S 2.1"
-    },
-    {
-      "id": "aqua/mimo-v2.5-pro",
-      "provider": "aqua",
-      "model": "mimo-v2.5-pro",
-      "pid": "MiMo V2.5 Pro",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "MiMo V2.5 Pro"
-    },
-    {
-      "id": "aqua/minimax-m3",
-      "provider": "aqua",
-      "model": "minimax-m3",
-      "pid": "MiniMax M3",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Minimax M3"
-    },
-    {
-      "id": "aqua/muse-glimmer",
-      "provider": "aqua",
-      "model": "muse-glimmer",
-      "pid": "Muse Glimmer 30B",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Muse Glimmer 30B"
-    },
-    {
-      "id": "aqua/muse-spark",
-      "provider": "aqua",
-      "model": "muse-spark",
-      "pid": "Muse Spark 1.2",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Muse Spark 1.2"
-    },
-    {
-      "id": "aqua/nemotron-3.5",
-      "provider": "aqua",
-      "model": "nemotron-3.5",
-      "pid": "Nemotron 3.5 Lightning",
-      "context_window": 200000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "stop",
-        "tools",
-        "tool_choice"
-      ],
-      "label": "Nemotron 3.5 Lightning"
+      "label": "Kimi K3"
     },
     {
       "id": "aqua/qwen-3.8",
@@ -610,13 +320,13 @@
         "tools",
         "tool_choice"
       ],
-      "label": "Qwen3.8 Max"
+      "label": "Qwen 3.8 Max"
     },
     {
-      "id": "aqua/step-3.7",
+      "id": "aqua/qwen-3.8-27b",
       "provider": "aqua",
-      "model": "step-3.7",
-      "pid": "Step 3.7 Flash",
+      "model": "qwen-3.8-27b",
+      "pid": "Qwen3.8 27B",
       "context_window": 200000,
       "max_output_tokens": 0,
       "features": [
@@ -639,164 +349,7 @@
         "tools",
         "tool_choice"
       ],
-      "label": "Step 3.7 Flash"
-    },
-    {
-      "id": "cloudflare/@cf/nvidia/nemotron-3-120b-a12b",
-      "provider": "cloudflare",
-      "model": "@cf/nvidia/nemotron-3-120b-a12b",
-      "pid": "Nemotron 3 Super",
-      "context_window": 256000,
-      "max_output_tokens": 0,
-      "features": [
-        "vision",
-        "tool-use",
-        "audio"
-      ],
-      "input_modalities": [
-        "text",
-        "audio",
-        "image"
-      ],
-      "output_modalities": [
-        "text",
-        "audio"
-      ],
-      "supported_parameters": [
-        "prompt",
-        "model",
-        "audio",
-        "voice",
-        "id",
-        "format",
-        "frequency_penalty",
-        "logit_bias",
-        "logprobs",
-        "top_logprobs",
-        "max_tokens",
-        "max_completion_tokens",
-        "metadata",
-        "modalities",
-        "n",
-        "parallel_tool_calls",
-        "prediction",
-        "type",
-        "content",
-        "text",
-        "presence_penalty",
-        "reasoning_effort",
-        "chat_template_kwargs",
-        "enable_thinking",
-        "clear_thinking",
-        "response_format",
-        "json_schema",
-        "name",
-        "description",
-        "schema",
-        "strict",
-        "seed",
-        "service_tier",
-        "stop",
-        "store",
-        "stream",
-        "stream_options",
-        "include_usage",
-        "include_obfuscation",
-        "temperature",
-        "tool_choice",
-        "function",
-        "custom",
-        "allowed_tools",
-        "mode",
-        "tools",
-        "parameters",
-        "grammar",
-        "definition",
-        "syntax",
-        "top_p",
-        "user",
-        "web_search_options",
-        "search_context_size",
-        "user_location",
-        "approximate",
-        "city",
-        "country",
-        "region",
-        "timezone",
-        "function_call",
-        "functions",
-        "messages",
-        "role",
-        "image_url",
-        "url",
-        "detail",
-        "input_audio",
-        "data",
-        "file",
-        "file_data",
-        "file_id",
-        "filename",
-        "refusal",
-        "tool_calls",
-        "arguments",
-        "input",
-        "tool_call_id"
-      ],
-      "label": "Nemotron 3 Super"
-    },
-    {
-      "id": "cloudflare/@cf/openai/gpt-oss-120b",
-      "provider": "cloudflare",
-      "model": "@cf/openai/gpt-oss-120b",
-      "pid": "GPT-OSS 120B",
-      "context_window": 128000,
-      "max_output_tokens": 0,
-      "features": [
-        "reasoning",
-        "tool-use"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "prompt",
-        "lora",
-        "response_format",
-        "type",
-        "json_schema",
-        "raw",
-        "stream",
-        "max_tokens",
-        "temperature",
-        "top_p",
-        "top_k",
-        "seed",
-        "repetition_penalty",
-        "frequency_penalty",
-        "presence_penalty",
-        "messages",
-        "role",
-        "content",
-        "text",
-        "functions",
-        "name",
-        "code",
-        "tools",
-        "description",
-        "parameters",
-        "required",
-        "properties",
-        "function",
-        "input",
-        "reasoning",
-        "effort",
-        "summary",
-        "requests"
-      ],
-      "label": "GPT OSS 120B"
+      "label": "Qwen 3.8 27B"
     },
     {
       "id": "cloudflare/@cf/qwen/qwen3.8-27b",
@@ -852,7 +405,6 @@
         "schema",
         "strict",
         "seed",
-        "service_tier",
         "stop",
         "store",
         "stream",
@@ -892,7 +444,47 @@
         "tool_call_id",
         "requests"
       ],
-      "label": "Qwen3.8 27B"
+      "label": "Qwen/qwen 3.8 27B"
+    },
+    {
+      "id": "evolvex/deepseek-ai/deepseek-v4-flash-0731",
+      "provider": "evolvex",
+      "model": "deepseek-ai/deepseek-v4-flash-0731",
+      "pid": "DeepSeek V4 Flash 0731",
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "features": [],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream"
+      ],
+      "label": "DeepSeek v4 Flash 0731"
+    },
+    {
+      "id": "evolvex/deepseek-ai/deepseek-v4-pro-0813",
+      "provider": "evolvex",
+      "model": "deepseek-ai/deepseek-v4-pro-0813",
+      "pid": "DeepSeek V4 Pro 0813",
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "features": [],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream"
+      ],
+      "label": "DeepSeek v4 Pro 0813"
     },
     {
       "id": "evolvex/minimaxai/minimax-m3",
@@ -915,10 +507,10 @@
       "label": "Minimax M3"
     },
     {
-      "id": "evolvex/nvidia/nemotron-3-super-120b-a12b",
+      "id": "evolvex/moonshotai/kimi-k3",
       "provider": "evolvex",
-      "model": "nvidia/nemotron-3-super-120b-a12b",
-      "pid": "Nemotron 3 Super",
+      "model": "moonshotai/kimi-k3",
+      "pid": "Kimi K3",
       "context_window": 0,
       "max_output_tokens": 0,
       "features": [],
@@ -932,156 +524,7 @@
         "messages",
         "stream"
       ],
-      "label": "Nemotron 3 Super"
-    },
-    {
-      "id": "evolvex/nvidia/nemotron-3-ultra-550b-a55b",
-      "provider": "evolvex",
-      "model": "nvidia/nemotron-3-ultra-550b-a55b",
-      "pid": "Nemotron 3 Ultra",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream"
-      ],
-      "label": "Nemotron 3 Ultra"
-    },
-    {
-      "id": "evolvex/nvidia/nemotron-3.5-lightning-30b-a3b",
-      "provider": "evolvex",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "pid": "Nemotron 3.5 Lightning",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream"
-      ],
-      "label": "Nemotron 3.5 Lightning"
-    },
-    {
-      "id": "evolvex/stepfun-ai/step-3.7-flash",
-      "provider": "evolvex",
-      "model": "stepfun-ai/step-3.7-flash",
-      "pid": "Step 3.7 Flash",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream"
-      ],
-      "label": "Step 3.7 Flash"
-    },
-    {
-      "id": "evolvex/thinkingmachines/inkling",
-      "provider": "evolvex",
-      "model": "thinkingmachines/inkling",
-      "pid": "Inkling",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream"
-      ],
-      "label": "Inkling"
-    },
-    {
-      "id": "google-ai-studio/gemini-3-flash-preview",
-      "provider": "google-ai-studio",
-      "model": "gemini-3-flash-preview",
-      "pid": "Gemini 3 Flash",
-      "context_window": 1048576,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "web-search",
-        "google-search",
-        "google-maps",
-        "file-search",
-        "url-context",
-        "code-execution",
-        "fast"
-      ],
-      "input_modalities": [],
-      "output_modalities": [],
-      "supported_parameters": [],
-      "label": "Gemini 3 Flash"
-    },
-    {
-      "id": "google-ai-studio/gemini-3.1-flash-lite",
-      "provider": "google-ai-studio",
-      "model": "gemini-3.1-flash-lite",
-      "pid": "Gemini 3.1 Flash Lite",
-      "context_window": 1048576,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "web-search",
-        "google-search",
-        "google-maps",
-        "file-search",
-        "url-context",
-        "code-execution",
-        "fast"
-      ],
-      "input_modalities": [],
-      "output_modalities": [],
-      "supported_parameters": [],
-      "label": "Gemini 3.1 Flash Lite"
-    },
-    {
-      "id": "google-ai-studio/gemini-3.1-flash-lite-preview",
-      "provider": "google-ai-studio",
-      "model": "gemini-3.1-flash-lite-preview",
-      "pid": "Gemini 3.1 Flash Lite",
-      "context_window": 1048576,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "web-search",
-        "google-search",
-        "google-maps",
-        "file-search",
-        "url-context",
-        "code-execution",
-        "fast"
-      ],
-      "input_modalities": [],
-      "output_modalities": [],
-      "supported_parameters": [],
-      "label": "Gemini 3.1 Flash Lite"
+      "label": "Kimi K3"
     },
     {
       "id": "google-ai-studio/gemini-3.5-flash",
@@ -1107,46 +550,17 @@
       "label": "Gemini 3.5 Flash"
     },
     {
-      "id": "google-ai-studio/gemini-3.5-flash-lite",
-      "provider": "google-ai-studio",
-      "model": "gemini-3.5-flash-lite",
-      "pid": "Gemini 3.5 Flash Lite",
-      "context_window": 1048576,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "web-search",
-        "google-search",
-        "google-maps",
-        "file-search",
-        "url-context",
-        "code-execution",
-        "fast"
-      ],
-      "input_modalities": [],
-      "output_modalities": [],
-      "supported_parameters": [],
-      "label": "Gemini 3.5 Flash Lite"
-    },
-    {
-      "id": "groq/openai/gpt-oss-120b",
+      "id": "groq/qwen/qwen3.8-27b",
       "provider": "groq",
-      "model": "openai/gpt-oss-120b",
-      "pid": "GPT-OSS 120B",
-      "context_window": 131072,
+      "model": "qwen/qwen3.8-27b",
+      "pid": "Qwen3.8 27B",
+      "context_window": 131042,
       "max_output_tokens": 0,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "web-search",
-        "browser-search",
-        "code-execution"
-      ],
+      "features": [],
       "input_modalities": [],
       "output_modalities": [],
       "supported_parameters": [],
-      "label": "GPT OSS 120B"
+      "label": "Qwen 3.8 27B"
     },
     {
       "id": "logfare/deepseek-v4-flash-0731",
@@ -1168,7 +582,7 @@
         "messages",
         "stream"
       ],
-      "label": "DeepSeek V4 Flash 0731"
+      "label": "DeepSeek v4 Flash 0731"
     },
     {
       "id": "logfare/deepseek-v4-pro-0813",
@@ -1190,13 +604,13 @@
         "messages",
         "stream"
       ],
-      "label": "DeepSeek V4 Pro 0813"
+      "label": "DeepSeek v4 Pro 0813"
     },
     {
-      "id": "logfare/gemma-4-26b",
+      "id": "logfare/minimax-m3",
       "provider": "logfare",
-      "model": "gemma-4-26b",
-      "pid": "Gemma 4 26B",
+      "model": "minimax-m3",
+      "pid": "MiniMax M3",
       "context_window": 0,
       "max_output_tokens": 0,
       "features": [
@@ -1212,34 +626,12 @@
         "messages",
         "stream"
       ],
-      "label": "Gemma 4 26B"
+      "label": "Minimax M3"
     },
     {
-      "id": "logfare/glm-5.2",
+      "id": "logfare/qwen-3.8-27b",
       "provider": "logfare",
-      "model": "glm-5.2",
-      "pid": "GLM 5.2",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream"
-      ],
-      "label": "GLM 5.2"
-    },
-    {
-      "id": "logfare/qwen3.8-27b",
-      "provider": "logfare",
-      "model": "qwen3.8-27b",
+      "model": "qwen-3.8-27b",
       "pid": "Qwen3.8 27B",
       "context_window": 0,
       "max_output_tokens": 0,
@@ -1256,14 +648,48 @@
         "messages",
         "stream"
       ],
-      "label": "Qwen3.8 27B"
+      "label": "Qwen 3.8 27B"
     },
     {
-      "id": "naga/nemotron-3-super-120b-a12b:free",
-      "provider": "naga",
-      "model": "nemotron-3-super-120b-a12b:free",
-      "pid": "Nemotron 3 Super",
-      "context_window": 262144,
+      "id": "openrouter/minimax/minimax-m3:free",
+      "provider": "openrouter",
+      "model": "minimax/minimax-m3:free",
+      "pid": "MiniMax M3",
+      "context_window": 1048576,
+      "max_output_tokens": 943718,
+      "features": [
+        "reasoning",
+        "vision",
+        "tool-use",
+        "video-input"
+      ],
+      "input_modalities": [
+        "text",
+        "image",
+        "video"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "include_reasoning",
+        "max_tokens",
+        "reasoning",
+        "response_format",
+        "seed",
+        "temperature",
+        "tool_choice",
+        "tools",
+        "top_p"
+      ],
+      "label": "Minimax M3:free"
+    },
+    {
+      "id": "routmy/deepseek/deepseek-v4-flash",
+      "provider": "routmy",
+      "model": "deepseek/deepseek-v4-flash",
+      "pid": "DeepSeek V4 Flash",
+      "context_window": 0,
       "max_output_tokens": 0,
       "features": [
         "tool-use",
@@ -1276,448 +702,203 @@
         "text"
       ],
       "supported_parameters": [
-        "max_completion_tokens",
-        "response_format",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p",
         "messages",
-        "stream"
+        "stream",
+        "temperature",
+        "top_p",
+        "max_tokens",
+        "max_completion_tokens",
+        "max_output_tokens",
+        "stop",
+        "n",
+        "seed",
+        "logprobs",
+        "top_logprobs",
+        "response_format",
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls",
+        "reasoning",
+        "reasoning_effort",
+        "thinking",
+        "modalities",
+        "audio",
+        "image_config",
+        "prompt_caching",
+        "prompt_cache_key",
+        "prompt_cache_retention",
+        "metadata",
+        "service_tier",
+        "prediction",
+        "store",
+        "user"
       ],
-      "label": "Nemotron 3 Super"
+      "label": "DeepSeek v4 Flash"
     },
     {
-      "id": "naga/nemotron-3-ultra-550b-a55b:free",
-      "provider": "naga",
-      "model": "nemotron-3-ultra-550b-a55b:free",
-      "pid": "Nemotron 3 Ultra",
-      "context_window": 1000000,
-      "max_output_tokens": 0,
-      "features": [
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "max_completion_tokens",
-        "response_format",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p",
-        "messages",
-        "stream"
-      ],
-      "label": "Nemotron 3 Ultra"
-    },
-    {
-      "id": "nvidia-nim/deepseek-ai/deepseek-v4-flash-0731",
-      "provider": "nvidia-nim",
-      "model": "deepseek-ai/deepseek-v4-flash-0731",
+      "id": "routmy/deepseek/deepseek-v4-flash-0731",
+      "provider": "routmy",
+      "model": "deepseek/deepseek-v4-flash-0731",
       "pid": "DeepSeek V4 Flash 0731",
       "context_window": 0,
       "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "DeepSeek V4 Flash 0731"
-    },
-    {
-      "id": "nvidia-nim/minimaxai/minimax-m3",
-      "provider": "nvidia-nim",
-      "model": "minimaxai/minimax-m3",
-      "pid": "MiniMax M3",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "Minimax M3"
-    },
-    {
-      "id": "nvidia-nim/nvidia/nemotron-3-super-120b-a12b",
-      "provider": "nvidia-nim",
-      "model": "nvidia/nemotron-3-super-120b-a12b",
-      "pid": "Nemotron 3 Super",
-      "context_window": 1000000,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "Nemotron 3 Super"
-    },
-    {
-      "id": "nvidia-nim/nvidia/nemotron-3-ultra-550b-a55b",
-      "provider": "nvidia-nim",
-      "model": "nvidia/nemotron-3-ultra-550b-a55b",
-      "pid": "Nemotron 3 Ultra",
-      "context_window": 1000000,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "Nemotron 3 Ultra"
-    },
-    {
-      "id": "nvidia-nim/nvidia/nemotron-3.5-lightning-30b-a3b",
-      "provider": "nvidia-nim",
-      "model": "nvidia/nemotron-3.5-lightning-30b-a3b",
-      "pid": "Nemotron 3.5 Lightning",
-      "context_window": 1000000,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "Nemotron 3.5 Lightning"
-    },
-    {
-      "id": "nvidia-nim/z-ai/glm-5.2",
-      "provider": "nvidia-nim",
-      "model": "z-ai/glm-5.2",
-      "pid": "GLM 5.2",
-      "context_window": 1000000,
-      "max_output_tokens": 0,
-      "features": [],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages"
-      ],
-      "label": "GLM 5.2"
-    },
-    {
-      "id": "openrouter/dots-studio/dots-3-note-preview:free",
-      "provider": "openrouter",
-      "model": "dots-studio/dots-3-note-preview:free",
-      "pid": "dots3-note Preview",
-      "context_window": 512000,
-      "max_output_tokens": 512000,
       "features": [
-        "reasoning",
-        "vision",
-        "tool-use"
+        "tool-use",
+        "chat"
       ],
       "input_modalities": [
-        "text",
-        "image"
+        "text"
       ],
       "output_modalities": [
         "text"
       ],
       "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "response_format",
-        "structured_outputs",
+        "messages",
+        "stream",
         "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "label": "dots3-note Preview"
-    },
-    {
-      "id": "openrouter/nvidia/nemotron-3-super-120b-a12b:free",
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3-super-120b-a12b:free",
-      "pid": "Nemotron 3 Super",
-      "context_window": 262144,
-      "max_output_tokens": 262144,
-      "features": [
-        "reasoning",
-        "tool-use"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "include_reasoning",
+        "top_p",
         "max_tokens",
+        "max_completion_tokens",
+        "max_output_tokens",
+        "stop",
+        "n",
+        "seed",
+        "logprobs",
+        "top_logprobs",
+        "response_format",
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls",
         "reasoning",
         "reasoning_effort",
-        "response_format",
-        "seed",
-        "structured_outputs",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
+        "thinking",
+        "modalities",
+        "audio",
+        "image_config",
+        "prompt_caching",
+        "prompt_cache_key",
+        "prompt_cache_retention",
+        "metadata",
+        "service_tier",
+        "prediction",
+        "store",
+        "user"
       ],
-      "label": "Nemotron 3 Super"
+      "label": "DeepSeek v4 Flash 0731"
     },
     {
-      "id": "openrouter/nvidia/nemotron-3-ultra-550b-a55b:free",
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3-ultra-550b-a55b:free",
-      "pid": "Nemotron 3 Ultra",
-      "context_window": 1000000,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "reasoning_effort",
-        "seed",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "label": "NVIDIA: Nemotron 3 Ultra"
-    },
-    {
-      "id": "openrouter/nvidia/nemotron-3.5-lightning:free",
-      "provider": "openrouter",
-      "model": "nvidia/nemotron-3.5-lightning:free",
-      "pid": "Nemotron 3.5 Lightning",
-      "context_window": 1000000,
-      "max_output_tokens": 65536,
-      "features": [
-        "reasoning",
-        "tool-use"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "seed",
-        "temperature",
-        "tool_choice",
-        "tools",
-        "top_p"
-      ],
-      "label": "Nemotron 3.5 Lightning"
-    },
-    {
-      "id": "openrouter/poolside/laguna-s-2.1:free",
-      "provider": "openrouter",
-      "model": "poolside/laguna-s-2.1:free",
-      "pid": "Laguna S 2.1",
-      "context_window": 262144,
-      "max_output_tokens": 32768,
-      "features": [
-        "reasoning",
-        "tool-use"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "include_reasoning",
-        "max_tokens",
-        "reasoning",
-        "temperature",
-        "tool_choice",
-        "tools"
-      ],
-      "label": "Laguna S 2.1"
-    },
-    {
-      "id": "pollinations/chigwell/minimax-m2.7",
-      "provider": "pollinations",
-      "model": "chigwell/minimax-m2.7",
-      "pid": "MiniMax M2.7",
+      "id": "routmy/deepseek/deepseek-v4-pro",
+      "provider": "routmy",
+      "model": "deepseek/deepseek-v4-pro",
+      "pid": "DeepSeek V4 Pro",
       "context_window": 0,
       "max_output_tokens": 0,
-      "features": [
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "MiniMax M2.7"
-    },
-    {
-      "id": "pollinations/chirag-gamer/gpt-oss-120b",
-      "provider": "pollinations",
-      "model": "chirag-gamer/gpt-oss-120b",
-      "pid": "GPT OSS 120B",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "GPT OSS 120B"
-    },
-    {
-      "id": "pollinations/Spit-fires/muse-glimmer",
-      "provider": "pollinations",
-      "model": "Spit-fires/muse-glimmer",
-      "pid": "Muse Glimmer 30B",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "Muse Glimmer 30B"
-    },
-    {
-      "id": "pollinations/vendouple/laguna-s-2.1:free",
-      "provider": "pollinations",
-      "model": "vendouple/laguna-s-2.1:free",
-      "pid": "Laguna S 2.1",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "vision",
-        "chat"
-      ],
-      "input_modalities": [
-        "text",
-        "image"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "Laguna S 2.1"
-    },
-    {
-      "id": "pollinations/vendouple/muse-glimmer-30b:free",
-      "provider": "pollinations",
-      "model": "vendouple/muse-glimmer-30b:free",
-      "pid": "Muse Glimmer 30B",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "vision",
-        "chat"
-      ],
-      "input_modalities": [
-        "text",
-        "image"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "Muse Glimmer 30B"
-    },
-    {
-      "id": "pollinations/YoannDev90/muse-glimmer-30b:free",
-      "provider": "pollinations",
-      "model": "YoannDev90/muse-glimmer-30b:free",
-      "pid": "Muse Glimmer 30B",
-      "context_window": 0,
-      "max_output_tokens": 0,
-      "features": [
-        "vision",
-        "chat"
-      ],
-      "input_modalities": [
-        "text",
-        "image"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [],
-      "label": "Muse Glimmer 30B"
-    },
-    {
-      "id": "vercel/poolside/laguna-s-2.1-free",
-      "provider": "vercel",
-      "model": "poolside/laguna-s-2.1-free",
-      "pid": "Laguna S 2.1",
-      "context_window": 256000,
-      "max_output_tokens": 32768,
       "features": [
         "reasoning",
         "tool-use",
+        "chat"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream",
+        "temperature",
+        "top_p",
+        "max_tokens",
+        "max_completion_tokens",
+        "max_output_tokens",
+        "stop",
+        "n",
+        "seed",
+        "logprobs",
+        "top_logprobs",
+        "response_format",
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls",
+        "reasoning",
+        "reasoning_effort",
+        "thinking",
+        "modalities",
+        "audio",
+        "image_config",
+        "prompt_caching",
+        "prompt_cache_key",
+        "prompt_cache_retention",
+        "metadata",
+        "service_tier",
+        "prediction",
+        "store",
+        "user"
+      ],
+      "label": "DeepSeek v4 Pro"
+    },
+    {
+      "id": "vercel/alibaba/qwen3.8-flash",
+      "provider": "vercel",
+      "model": "alibaba/qwen3.8-flash",
+      "pid": "Qwen3.8 Flash",
+      "context_window": 991000,
+      "max_output_tokens": 128000,
+      "features": [
+        "reasoning",
+        "vision",
+        "tool-use",
         "web-search",
         "perplexity-web-search",
-        "free"
+        "implicit-caching",
+        "file-input"
       ],
       "input_modalities": [],
       "output_modalities": [],
       "supported_parameters": [],
-      "label": "Laguna S 2.1"
+      "label": "Qwen 3.8 Flash"
+    },
+    {
+      "id": "vercel/meta/muse-spark-1.1",
+      "provider": "vercel",
+      "model": "meta/muse-spark-1.1",
+      "pid": "Muse Spark 1.1",
+      "context_window": 1048576,
+      "max_output_tokens": 1048576,
+      "features": [
+        "reasoning",
+        "vision",
+        "tool-use",
+        "web-search",
+        "perplexity-web-search",
+        "implicit-caching",
+        "file-input"
+      ],
+      "input_modalities": [],
+      "output_modalities": [],
+      "supported_parameters": [],
+      "label": "Muse Spark 1.1"
+    },
+    {
+      "id": "vercel/spacexai/grok-4.6",
+      "provider": "vercel",
+      "model": "spacexai/grok-4.6",
+      "pid": "Grok 4.6",
+      "context_window": 500000,
+      "max_output_tokens": 500000,
+      "features": [
+        "reasoning",
+        "vision",
+        "tool-use",
+        "web-search",
+        "perplexity-web-search",
+        "implicit-caching"
+      ],
+      "input_modalities": [],
+      "output_modalities": [],
+      "supported_parameters": [],
+      "label": "Grok 4.6"
     },
     {
       "id": "voidai/deepseek-v4-flash-0731",
@@ -1748,7 +929,7 @@
         "tool_choice",
         "parallel_tool_calls"
       ],
-      "label": "DeepSeek V4 Flash 0731"
+      "label": "DeepSeek v4 Flash 0731"
     },
     {
       "id": "voidai/deepseek-v4-pro",
@@ -1779,48 +960,15 @@
         "tool_choice",
         "parallel_tool_calls"
       ],
-      "label": "DeepSeek V4 Pro"
+      "label": "DeepSeek v4 Pro"
     },
     {
-      "id": "voidai/gpt-5.4-mini",
+      "id": "voidai/deepseek-v4-pro-0813",
       "provider": "voidai",
-      "model": "gpt-5.4-mini",
-      "pid": "GPT-5.4 Mini",
-      "context_window": 400000,
-      "max_output_tokens": 128000,
-      "features": [
-        "reasoning",
-        "tool-use",
-        "chat"
-      ],
-      "input_modalities": [
-        "text"
-      ],
-      "output_modalities": [
-        "text"
-      ],
-      "supported_parameters": [
-        "messages",
-        "stream",
-        "temperature",
-        "top_p",
-        "max_tokens",
-        "max_completion_tokens",
-        "response_format",
-        "tools",
-        "tool_choice",
-        "parallel_tool_calls",
-        "reasoning_effort"
-      ],
-      "label": "GPT 5.4 Mini"
-    },
-    {
-      "id": "voidai/kimi-k2.6",
-      "provider": "voidai",
-      "model": "kimi-k2.6",
-      "pid": "Kimi K2.6",
-      "context_window": 262144,
-      "max_output_tokens": 262144,
+      "model": "deepseek-v4-pro-0813",
+      "pid": "DeepSeek V4 Pro 0813",
+      "context_window": 1048576,
+      "max_output_tokens": 1048576,
       "features": [
         "tool-use",
         "chat"
@@ -1843,15 +991,15 @@
         "tool_choice",
         "parallel_tool_calls"
       ],
-      "label": "Kimi K2.6"
+      "label": "DeepSeek v4 Pro 0813"
     },
     {
-      "id": "voidai/kimi-k2.7-code",
+      "id": "voidai/glm-5.2",
       "provider": "voidai",
-      "model": "kimi-k2.7-code",
-      "pid": "Kimi K2.7 Code",
-      "context_window": 262144,
-      "max_output_tokens": 262144,
+      "model": "glm-5.2",
+      "pid": "GLM 5.2",
+      "context_window": 1000000,
+      "max_output_tokens": 131072,
       "features": [
         "tool-use",
         "chat"
@@ -1874,7 +1022,7 @@
         "tool_choice",
         "parallel_tool_calls"
       ],
-      "label": "Kimi K2.7 Code"
+      "label": "GLM 5.2"
     },
     {
       "id": "voidai/kimi-k3",
@@ -1906,6 +1054,68 @@
         "parallel_tool_calls"
       ],
       "label": "Kimi K3"
+    },
+    {
+      "id": "voidai/qwen3.8-2.4t-a95b",
+      "provider": "voidai",
+      "model": "qwen3.8-2.4t-a95b",
+      "pid": "Qwen3.8 2.4T A95B",
+      "context_window": 1048576,
+      "max_output_tokens": 131072,
+      "features": [
+        "tool-use",
+        "chat"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream",
+        "temperature",
+        "top_p",
+        "max_tokens",
+        "max_completion_tokens",
+        "response_format",
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls"
+      ],
+      "label": "Qwen 3.8 2.4T A95b"
+    },
+    {
+      "id": "voidai/qwen3.8-27b:free",
+      "provider": "voidai",
+      "model": "qwen3.8-27b:free",
+      "pid": "Qwen3.8 27B",
+      "context_window": 0,
+      "max_output_tokens": 0,
+      "features": [
+        "tool-use",
+        "chat"
+      ],
+      "input_modalities": [
+        "text"
+      ],
+      "output_modalities": [
+        "text"
+      ],
+      "supported_parameters": [
+        "messages",
+        "stream",
+        "temperature",
+        "top_p",
+        "max_tokens",
+        "max_completion_tokens",
+        "response_format",
+        "tools",
+        "tool_choice",
+        "parallel_tool_calls"
+      ],
+      "label": "Qwen 3.8 27b:free"
     }
   ]
 }
