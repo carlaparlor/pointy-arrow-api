@@ -187,6 +187,7 @@ def _boot() -> None:
 
 
 def main() -> int:
+    global _active
     start = time.time()
     last_activity = time.time()
     last_heartbeat = 0.0
