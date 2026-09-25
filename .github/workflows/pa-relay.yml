@@ -27,4 +27,13 @@ jobs:
       - name: Run relay
         env:
           PA_RELAY_BRANCH: arena/01a0da09-pointy-arrow-api
-        run: python3 .pa-relay/runner.py
+        run: |
+          rc=0
+          python3 .pa-relay/runner.py 2> relay-stderr.log || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            MSG=$(tail -c 900 relay-stderr.log | tr '\n' ' ' | tail -c 110)
+            gh api -f state=error -f description="runner rc=$rc: $MSG" \
+               repos/$GITHUB_REPOSITORY/statuses/$GITHUB_SHA || true
+            echo "::error ::runner exited rc=$rc"
+            exit "$rc"
+          fi
