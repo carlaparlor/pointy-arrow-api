@@ -65,7 +65,8 @@ class _Git:
             (self.dir / ".pa-relay" / sub).mkdir(parents=True, exist_ok=True)
 
     def _run(self, cmd: List[str], cwd: Optional[Path] = None) -> subprocess.CompletedProcess:
-        return subprocess.run(cmd, cwd=str(cwd or self.dir), capture_output=True, text=True, timeout=120)
+        workdir = cwd if cwd is not None else (self.dir if self.dir.exists() else self.dir.parent)
+        return subprocess.run(cmd, cwd=str(workdir), capture_output=True, text=True, timeout=180)
 
     def fetch(self, force: bool = False) -> None:
         now = time.time()

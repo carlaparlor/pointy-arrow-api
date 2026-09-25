@@ -42,17 +42,34 @@ _git_lock = threading.Lock()
 _seen: set[str] = set()
 _active = 0
 _active_lock = threading.Lock()
+LOG_LINES: list[str] = []
+LOG_FILE = REPO_DIR / ".pa-relay" / "runner.log"
+EXEC_LOG = REPO_DIR / ".pa-relay" / "exec.log"
 
 
 def git(*args: str, check: bool = True) -> subprocess.CompletedProcess:
-    return subprocess.run(
-        ["git", *args], cwd=REPO_DIR, check=check,
+    res = subprocess.run(
+        ["git", *args], cwd=REPO_DIR, check=False,
         capture_output=True, text=True,
     )
+    if check and res.returncode != 0:
+        raise RuntimeError(f"git {' '.join(args)} -> {res.returncode}: {res.stderr.strip()[:300]}")
+    return res
 
 
 def log(msg: str) -> None:
-    print(f"[pa-relay {time.strftime('%H:%M:%S')}] {msg}", flush=True)
+    line = f"[pa-relay {time.strftime('%H:%M:%S')}] {msg}"
+    print(line, flush=True)
+    LOG_LINES.append(line)
+
+
+def dump_log() -> None:
+    """Commit the runner log so the sandbox side can read it."""
+    try:
+        LOG_FILE.write_text("\n".join(LOG_LINES) + "\n")
+        commit_and_push("relay: runner log")
+    except Exception as exc:  # noqa: BLE001
+        print(f"log dump failed: {exc}", flush=True)
 
 
 def sync_remote() -> None:
@@ -119,6 +136,8 @@ def run_exchange(req: dict) -> None:
         if not stream:
             data = resp.content
             log(f"<- {rid} {resp.status_code} {len(data)}B")
+            with EXEC_LOG.open("a") as fh:
+                fh.write(f"{time.strftime('%H:%M:%S')} {rid} {method} {url} -> {resp.status_code} {len(data)}B\n")
             write_response(rid, {"status": resp.status_code, "headers": out_headers,
                                  "body_b64": base64.b64encode(data).decode(),
                                  "done": True, "error": None})
@@ -153,15 +172,26 @@ def run_exchange(req: dict) -> None:
             _active -= 1
 
 
-def main() -> int:
-    start = time.time()
-    last_activity = time.time()
-    last_heartbeat = 0.0
+def _boot() -> None:
     git("config", "user.email", "pa-relay[bot]@users.noreply.github.com")
     git("config", "user.name", "pa-relay[bot]")
     IN_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # immediate push sanity probe
+    probe = REPO_DIR / ".pa-relay" / "boot-probe.txt"
+    probe.write_text(f"boot {time.time()} branch={BRANCH}\n")
+    ok = commit_and_push("relay: boot probe (push sanity check)")
+    log(f"boot probe push: {'OK' if ok else 'FAILED'}")
+    remote = git("remote", "-v").stdout.strip().splitlines()[0] if git("remote", "-v").stdout else "?"
+    log(f"remote: {remote}")
+
+
+def main() -> int:
+    start = time.time()
+    last_activity = time.time()
+    last_heartbeat = 0.0
     log(f"runner up on branch {BRANCH}")
+    _boot()
     pool = []
     while time.time() - start < MAX_LIFE_S:
         now = time.time()
@@ -208,8 +238,19 @@ def main() -> int:
             commit_and_push("relay: heartbeat")
         time.sleep(POLL_S)
     log("runner exiting")
+    dump_log()
     return 0
 
 
 if __name__ == "__main__":
-    sys.exit(main())
+    try:
+        sys.exit(main())
+    except BaseException as exc:  # noqa: BLE001
+        import traceback
+        log(f"FATAL: {type(exc).__name__}: {exc}")
+        log(traceback.format_exc())
+        try:
+            dump_log()
+        except Exception:
+            pass
+        raise
