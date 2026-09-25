@@ -1,0 +1,50 @@
+name: tests
+
+on:
+  push:
+    branches: [main, "arena/**"]
+  pull_request:
+  workflow_dispatch:
+    inputs:
+      live_harvest:
+        description: "Provision a real Gratisfy account (creates a real throwaway account)"
+        type: boolean
+        default: false
+
+jobs:
+  offline:
+    name: "full suite (no third-party egress)"
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest httpx
+      - name: Run everything except the live tests
+        run: pytest -m "not live" -v --tb=short
+
+  live:
+    name: "live Gratisfy endpoints"
+    runs-on: ubuntu-latest
+    # these need real internet access to gratisfy.xyz / auth.gratisfy.xyz / api.mail.tm
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.11"
+      - run: pip install -r requirements.txt pytest httpx
+      - name: Reachability probes
+        run: pytest -m live -v --tb=short -k "reachable or requires_a_key or anonymous or fields"
+      - name: Real chat completion (needs a token)
+        if: ${{ secrets.PA_LIVE_TOKEN != '' }}
+        env:
+          PA_LIVE_TOKEN: ${{ secrets.PA_LIVE_TOKEN }}
+          PA_LIVE_REFRESH_TOKEN: ${{ secrets.PA_LIVE_REFRESH_TOKEN }}
+          PA_LIVE_MODEL: ${{ vars.PA_LIVE_MODEL || 'kimi-k3' }}
+        run: pytest -m live -v --tb=short -k "supplied or live_non_streaming or live_tool or live_reasoning or live_router"
+      - name: Real credential harvest (opt-in)
+        if: ${{ inputs.live_harvest || vars.PA_LIVE_HARVEST == '1' }}
+        env:
+          PA_LIVE_HARVEST: "1"
+        run: pytest -m live -v --tb=short -k "harvest"

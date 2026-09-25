@@ -1,5 +1,7 @@
 from __future__ import annotations
 import json
+import os
+import threading
 import re
 import string
 import time
@@ -11,18 +13,25 @@ from datetime import datetime, timezone
 from pathlib import Path
 from typing import Any, Dict, List, Optional
 import requests
-SUPABASE_URL = "https://auth.gratisfy.xyz"
+SUPABASE_URL = (os.getenv("PA_SUPABASE_URL") or "https://auth.gratisfy.xyz").rstrip("/")
 SUPABASE_ANON_KEY = "eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJyb2xlIjoiYW5vbiIsImlzcyI6InN1cGFiYXNlIiwiaWF0IjoxNjQxNzY5MjAwLCJleHAiOjQxMDI0NDQ4MDB9.GdZl3P5sG09Vlq15A4TIAIWHUyCdFf8rdOx4B_zYuCQ"
 DEFAULT_USER_AGENT = "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/150.0.0.0 Safari/537.36"
 DEFAULT_OUTPUT = Path(__file__).parent / "credentials.json"
 REFRESH_LEEWAY_S = 60.0
 HTTP_TIMEOUT = 30
-MAILTM_BASE = "https://api.mail.tm"
+MAILTM_BASE = (os.getenv("PA_MAILTM_BASE") or "https://api.mail.tm").rstrip("/")
 MAILTM_TIMEOUT = 30
 MAILTM_VERIFY_POLL_SECS = 5.0
 MAILTM_VERIFY_TIMEOUT_SECS = 180.0
+def _default_output() -> Path:
+    override = os.getenv("PA_CREDENTIALS_PATH")
+    if override:
+        return Path(override).expanduser()
+    return Path(__file__).parent / "credentials.json"
+DEFAULT_OUTPUT = _default_output()
 def _utc_now() -> str:
     return datetime.now(timezone.utc).isoformat()
+
 @dataclass
 class Credential:
     id: str
@@ -52,6 +61,31 @@ class Credential:
         if expires_in is not None:
             self.expires_at = time.time() + max(30, int(expires_in) - 10)
         self.last_refreshed_at = _utc_now()
+def _as_float(value: Any, default: float = 0.0) -> float:
+    """Best-effort numeric coercion; junk values degrade to the default."""
+    try:
+        return float(value)
+    except (TypeError, ValueError):
+        return default
+
+
+# Serialises writes to any given credentials file.  The pool saves after every
+# successful request, so without this two concurrent requests can interleave a
+# truncate+write and leave a half-written (unparseable) pool behind.
+_SAVE_LOCKS: Dict[str, threading.Lock] = {}
+_SAVE_LOCKS_GUARD = threading.Lock()
+
+
+def _save_lock(path: Path) -> threading.Lock:
+    key = str(path)
+    with _SAVE_LOCKS_GUARD:
+        lock = _SAVE_LOCKS.get(key)
+        if lock is None:
+            lock = threading.Lock()
+            _SAVE_LOCKS[key] = lock
+        return lock
+
+
 class CredentialFile:
     def __init__(self, path: Path = DEFAULT_OUTPUT) -> None:
         self.path = Path(path)
@@ -63,15 +97,21 @@ class CredentialFile:
         except Exception:
             return []
         items = raw.get("credentials", []) if isinstance(raw, dict) else raw
+        if not isinstance(items, list):
+            items = []
         creds: List[Credential] = []
         for item in items:
+            # A hand-edited or partially written pool must not be able to crash
+            # the process loading it -- that would take the whole API down.
+            if not isinstance(item, dict):
+                continue
             creds.append(Credential(
                 id=item.get("id") or str(uuid.uuid4()),
                 email=item.get("email"),
                 password=item.get("password"),
                 access_token=item.get("access_token"),
                 refresh_token=item.get("refresh_token"),
-                expires_at=float(item.get("expires_at", 0.0) or 0.0),
+                expires_at=_as_float(item.get("expires_at")),
                 user_agent=item.get("user_agent", DEFAULT_USER_AGENT),
                 created_at=item.get("created_at", _utc_now()),
                 last_refreshed_at=item.get("last_refreshed_at"),
@@ -85,7 +125,18 @@ class CredentialFile:
             "count": len(credentials),
             "credentials": [asdict(c) for c in credentials],
         }
-        self.path.write_text(json.dumps(payload, indent=2), encoding="utf-8")
+        blob = json.dumps(payload, indent=2)
+        with _save_lock(self.path):
+            self.path.parent.mkdir(parents=True, exist_ok=True)
+            # Write to a sibling temp file and rename it into place: readers
+            # either see the old file or the new one, never a partial write.
+            tmp = self.path.with_name(f"{self.path.name}.{os.getpid()}.{uuid.uuid4().hex}.tmp")
+            try:
+                tmp.write_text(blob, encoding="utf-8")
+                os.replace(tmp, self.path)
+            finally:
+                if tmp.exists():
+                    tmp.unlink(missing_ok=True)
 class _HttpError(RuntimeError):
     def __init__(self, message: str, status: Optional[int] = None, body: Optional[str] = None):
         super().__init__(message)
@@ -188,6 +239,10 @@ def _mailtm_read_message(token: str, message_id: str) -> Dict[str, Any]:
     with requests.get(f"{MAILTM_BASE}/messages/{message_id}", headers=_mailtm_headers(token), timeout=MAILTM_TIMEOUT) as r:
         r.raise_for_status()
         return r.json()
+VERIFY_PATH_MARKER = "/auth/v1/verify"
+_VERIFY_URL_RE = re.compile(
+    r"https?://[^\s\"'<>\\]+" + re.escape(VERIFY_PATH_MARKER) + r"\?[^\s\"'<>\\]+"
+)
 def _extract_verify_url(msg: Dict[str, Any]) -> Optional[str]:
     text_parts = [msg.get("text") or "", msg.get("intro") or ""]
     html = msg.get("html") or ""
@@ -195,7 +250,7 @@ def _extract_verify_url(msg: Dict[str, Any]) -> Optional[str]:
         html = " ".join(str(p) for p in html)
     text_parts.append(html)
     body = "\n".join(text_parts)
-    m = re.search(r'https://auth\.gratisfy\.xyz/auth/v1/verify\?[^"\'<>\s]+', body)
+    m = _VERIFY_URL_RE.search(body)
     if m:
         url = m.group(0)
         url = url.replace("&amp;", "&").replace("&quot;", '"').replace("&#39;", "'")
@@ -249,7 +304,10 @@ def _rand_password(length: int = 24) -> str:
 def _rand_username(prefix: str = "pa") -> str:
     suffix = uuid.uuid4().hex[:10]
     return f"{prefix}_{suffix}"
-def harvest_one(mailtm_domain: Optional[str] = None) -> Credential:
+def harvest_one(
+    mailtm_domain: Optional[str] = None,
+    verify_timeout: float = MAILTM_VERIFY_TIMEOUT_SECS,
+) -> Credential:
     domain = (mailtm_domain or "").strip() or _mailtm_get_active_domain()
     mail_user = _rand_username()
     mail_pw = _rand_password(20)
@@ -259,7 +317,7 @@ def harvest_one(mailtm_domain: Optional[str] = None) -> Credential:
     _mailtm_create_account(email, mail_pw)
     mail_token = _mailtm_get_token(email, mail_pw)
     _gratisfy_signup(email, grat_pw)
-    verify_url = _mailtm_wait_for_verify_url(mail_token)
+    verify_url = _mailtm_wait_for_verify_url(mail_token, timeout_s=verify_timeout)
     _confirm_email(verify_url)
     login = _gratisfy_password_login(email, grat_pw)
     cred = Credential(
@@ -272,13 +330,18 @@ def harvest_one(mailtm_domain: Optional[str] = None) -> Credential:
         source="auto-harvest",
     )
     return cred
-def harvest(count: int, output: Path = DEFAULT_OUTPUT, on_event=None) -> List[Credential]:
+def harvest(
+    count: int,
+    output: Path = DEFAULT_OUTPUT,
+    on_event=None,
+    verify_timeout: float = MAILTM_VERIFY_TIMEOUT_SECS,
+) -> List[Credential]:
     store = CredentialFile(output)
     existing = store.load()
     harvested: List[Credential] = []
     for i in range(count):
         try:
-            cred = harvest_one()
+            cred = harvest_one(verify_timeout=verify_timeout)
         except Exception as exc:
             if on_event:
                 on_event("error", i + 1, count, str(exc))

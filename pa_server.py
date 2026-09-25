@@ -110,28 +110,41 @@ def _messages_to_dicts(messages: List[ChatMessage]) -> List[Dict[str, Any]]:
     return out
 def _estimate_tokens(text: str) -> int:
     return max(1, len(text) // 4)
+def _coerce_int(value: Any, fallback: int) -> int:
+    """Never let a malformed upstream usage block turn into a 500."""
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        try:
+            return int(float(value))
+        except (TypeError, ValueError):
+            return fallback
+
+
 def _normalize_usage(usage: Optional[Dict[str, Any]], prompt_text: str, completion_text: str) -> Dict[str, int]:
-    usage = usage or {}
-    prompt = (
-        usage.get("prompt_tokens")
-        or usage.get("promptTokens")
-        or usage.get("input_tokens")
-        or usage.get("inputTokens")
-        or _estimate_tokens(prompt_text)
+    usage = usage if isinstance(usage, dict) else {}
+    prompt = _first_number(
+        usage, ("prompt_tokens", "promptTokens", "input_tokens", "inputTokens"),
+        _estimate_tokens(prompt_text),
     )
-    completion = (
-        usage.get("completion_tokens")
-        or usage.get("completionTokens")
-        or usage.get("output_tokens")
-        or usage.get("outputTokens")
-        or usage.get("candidatesTokenCount")
-        or _estimate_tokens(completion_text)
+    completion = _first_number(
+        usage,
+        ("completion_tokens", "completionTokens", "output_tokens", "outputTokens",
+         "candidatesTokenCount"),
+        _estimate_tokens(completion_text),
     )
     return {
-        "prompt_tokens": int(prompt),
-        "completion_tokens": int(completion),
-        "total_tokens": int(prompt) + int(completion),
+        "prompt_tokens": prompt,
+        "completion_tokens": completion,
+        "total_tokens": prompt + completion,
     }
+
+
+def _first_number(usage: Dict[str, Any], keys: Tuple[str, ...], fallback: int) -> int:
+    for key in keys:
+        if usage.get(key) is not None:
+            return _coerce_int(usage.get(key), fallback)
+    return fallback
 @asynccontextmanager
 async def lifespan(app: FastAPI) -> AsyncGenerator[None, None]:
     router = PARouter()

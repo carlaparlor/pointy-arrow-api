@@ -23,7 +23,7 @@ from pa_credentials import (
 from pa_models import ModelCard, ModelRegistry, Route, REGISTRY
 AUTO_REFRESH_TOKEN = os.getenv("PA_AUTO_REFRESH", "1") not in {"0", "false", "False", ""}
 AUTO_HARVEST = os.getenv("PA_AUTO_HARVEST", "1") not in {"0", "false", "False", ""}
-CHAT_ENDPOINT = "https://gratisfy.xyz/api/chat"
+CHAT_ENDPOINT = (os.getenv("PA_CHAT_ENDPOINT") or "https://gratisfy.xyz/api/chat").rstrip("/")
 DEFAULT_WEBSITE_ROUTE = "chat"
 MIN_WORKING = 1
 TARGET_WORKING = 3
@@ -162,19 +162,31 @@ def _last_json_object(text: str) -> Tuple[Optional[Any], Optional[int]]:
         if t.startswith("json"):
             t = t[4:]
         t = t.strip()
-    starts = [m.start() for m in re.finditer(r"\{", t)]
+    # Consider both object and array openings so that a *list* of parallel tool
+    # calls is recognised as one payload instead of being shredded into its
+    # first element.
+    starts = [m.start() for m in re.finditer(r"[\[{]", t)]
     decoder = json.JSONDecoder()
     best: Optional[Tuple[Any, int]] = None
+    best_call: Optional[Tuple[Any, int]] = None
+    best_span = -1
     for idx in starts:
         try:
-            obj, _ = decoder.raw_decode(t, idx)
+            obj, end = decoder.raw_decode(t, idx)
         except Exception:
             continue
-        if isinstance(obj, (dict, list)):
-            if _looks_like_tool_call(obj):
-                return obj, idx
-            if best is None:
-                best = (obj, idx)
+        if not isinstance(obj, (dict, list)):
+            continue
+        if _looks_like_tool_call(obj):
+            # Prefer the outermost tool-call payload: that keeps a whole array
+            # of calls together.
+            if end - idx > best_span:
+                best_span = end - idx
+                best_call = (obj, idx)
+        elif best is None:
+            best = (obj, idx)
+    if best_call is not None:
+        return best_call
     return best if best is not None else (None, None)
 def _json_position(text: str) -> Optional[int]:
     _, idx = _last_json_object(text)

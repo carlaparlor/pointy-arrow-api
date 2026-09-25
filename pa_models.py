@@ -1,5 +1,6 @@
 from __future__ import annotations
 import json
+import os
 import re
 import threading
 import time
@@ -7,7 +8,7 @@ from dataclasses import dataclass
 from pathlib import Path
 from typing import Any, Dict, List, Optional, Tuple
 ROOT = Path(__file__).resolve().parent
-MODELS_PATH = ROOT / "models.json"
+MODELS_PATH = Path(os.getenv("PA_MODELS_PATH") or (ROOT / "models.json"))
 FALLBACK_PATHS = (
     ROOT / "gratisfy_analysis" / "models.json",
     ROOT / "gratisfy_analysis" / "working_models.json",
@@ -89,6 +90,19 @@ def _find_models_file() -> Optional[Path]:
         if p.is_file():
             return p
     return None
+def _as_tuple(value: Any) -> Tuple[str, ...]:
+    if isinstance(value, (list, tuple)):
+        return tuple(str(v) for v in value)
+    return ()
+
+
+def _as_int(value: Any, default: int = 0) -> int:
+    try:
+        return int(value)
+    except (TypeError, ValueError):
+        return default
+
+
 def _route_from_row(row: Dict[str, Any]) -> Optional[Route]:
     provider = str(row.get("provider") or "").strip()
     raw_id = str(row.get("model") or row.get("id") or "").strip()
@@ -102,12 +116,12 @@ def _route_from_row(row: Dict[str, Any]) -> Optional[Route]:
         mid=mid,
         pid=pid,
         slug="",
-        context_window=int(row.get("context_window") or 0),
-        max_output_tokens=int(row.get("max_output_tokens") or 0),
-        features=tuple(row.get("features") or ()),
-        input_modalities=tuple(row.get("input_modalities") or ()),
-        output_modalities=tuple(row.get("output_modalities") or ()),
-        supported_parameters=tuple(row.get("supported_parameters") or ()),
+        context_window=_as_int(row.get("context_window")),
+        max_output_tokens=_as_int(row.get("max_output_tokens")),
+        features=_as_tuple(row.get("features")),
+        input_modalities=_as_tuple(row.get("input_modalities")),
+        output_modalities=_as_tuple(row.get("output_modalities")),
+        supported_parameters=_as_tuple(row.get("supported_parameters")),
         label=str(row.get("label") or pid),
     )
 class ModelRegistry:
@@ -126,8 +140,14 @@ class ModelRegistry:
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
             except Exception:
-                data = {}
-            rows = data.get("models") if isinstance(data, dict) else data
+                data = None
+            if isinstance(data, dict):
+                data = data.get("models")
+            # A catalogue that is valid JSON but carries no "models" list
+            # (truncated write, hand-edited file, wrong shape) must degrade to
+            # "no models" instead of taking the whole process down.
+            if isinstance(data, list):
+                rows = [row for row in data if isinstance(row, dict)]
         routes: List[Route] = []
         for row in rows:
             r = _route_from_row(row)
