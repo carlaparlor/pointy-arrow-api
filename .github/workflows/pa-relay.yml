@@ -33,9 +33,16 @@ jobs:
           PA_RELAY_BRANCH: arena/01a0da31-pointy-arrow-api
         run: |
           rc=0
-          python3 .pa-relay/runner.py 2> relay-stderr.log || rc=$?
-          if [ "$rc" -ne 0 ]; then
-            echo "::error ::relay runner exited rc=$rc"
-            tail -c 2000 relay-stderr.log
-            exit "$rc"
-          fi
+          python3 -u .pa-relay/runner.py > relay-stdout.log 2> relay-stderr.log || rc=$?
+          # always persist the runner's own output so the sandbox can read it
+          git config user.email "pa-relay[bot]@users.noreply.github.com"
+          git config user.name "pa-relay[bot]"
+          mkdir -p .pa-relay
+          cp -f relay-stderr.log .pa-relay/relay-stderr.log || true
+          cp -f relay-stdout.log .pa-relay/relay-stdout.log || true
+          git add -f -A .pa-relay/relay-stderr.log .pa-relay/relay-stdout.log
+          git commit -q -m "relay: diagnostics (rc=$rc)" || true
+          git push -q origin HEAD:arena/01a0da31-pointy-arrow-api || true
+          echo "::error ::relay runner exited rc=$rc"
+          tail -c 3000 relay-stderr.log
+          exit "$rc"
