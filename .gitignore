@@ -2,3 +2,6 @@ __pycache__/
 gratisfy_analysis/
 credentials.json
 *.log
+.pa-relay/runner.log
+.pa-relay/exec.log
+.pa-relay/relay-stderr.log

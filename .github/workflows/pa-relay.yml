@@ -1,0 +1,41 @@
+name: pa-relay
+
+# Executes the HTTP requests that tests/relay_client.py queues through git, on a
+# runner that has unrestricted egress to gratisfy.xyz / auth.gratisfy.xyz /
+# api.mail.tm.  See .pa-relay/runner.py for the mailbox protocol.
+on:
+  push:
+    branches: [arena/01a0da31-pointy-arrow-api]
+    paths:
+      - ".pa-relay/in/**"
+  workflow_dispatch: {}
+
+concurrency:
+  group: pa-relay-01a0da31
+  cancel-in-progress: false
+
+permissions:
+  contents: write
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 60
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0da31-pointy-arrow-api
+          fetch-depth: 0
+      - name: Install deps
+        run: python3 -m pip install --quiet requests
+      - name: Run relay
+        env:
+          PA_RELAY_BRANCH: arena/01a0da31-pointy-arrow-api
+        run: |
+          rc=0
+          python3 .pa-relay/runner.py 2> relay-stderr.log || rc=$?
+          if [ "$rc" -ne 0 ]; then
+            echo "::error ::relay runner exited rc=$rc"
+            tail -c 2000 relay-stderr.log
+            exit "$rc"
+          fi
