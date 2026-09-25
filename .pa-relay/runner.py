@@ -30,13 +30,14 @@ OUT_DIR = REPO_DIR / ".pa-relay" / "out"
 HEARTBEAT = REPO_DIR / ".pa-relay" / "heartbeat.json"
 
 MAX_LIFE_S = 320 * 60          # leave margin under the 360min job timeout
-IDLE_EXIT_S = 8
+IDLE_EXIT_S = 45               # exit when nothing happened for this long
 POLL_S = 1.0                   # remote-check cadence
 STREAM_PUSH_S = 1.5            # min seconds between stream update pushes
-HEARTBEAT_BUSY_S = 45          # heartbeat cadence while workers are active
-HEARTBEAT_IDLE_S = 10
+HEARTBEAT_BUSY_S = 15          # heartbeat cadence while workers are active
+HEARTBEAT_IDLE_S = 30          # heartbeat cadence when idle
 MAX_WORKERS = 4
 HTTP_TIMEOUT = (15, 300)
+LOG_FLUSH_S = 5.0              # runner.log cadence while running
 
 _git_lock = threading.Lock()
 _seen: set[str] = set()
@@ -74,15 +75,21 @@ def dump_log() -> None:
 
 def sync_remote() -> None:
     """Fetch the branch and hard-reset to it (all local state is committed)."""
-    git("fetch", "-q", "origin", BRANCH)
-    git("reset", "-q", "--hard", f"origin/{BRANCH}")
-    git("clean", "-q", "-fd", ".pa-relay/in", ".pa-relay/out")
+    with _git_lock:
+        git("fetch", "-q", "origin", BRANCH)
+        git("reset", "-q", "--hard", f"origin/{BRANCH}")
+        git("clean", "-q", "-fd", ".pa-relay/in", ".pa-relay/out")
 
 
 def commit_and_push(message: str) -> bool:
-    """Commit everything under .pa-relay and push, rebasing through conflicts."""
+    """Commit runner-owned files and push, rebasing through conflicts.
+
+    Never stages .pa-relay/in (the sandbox owns inbox lifecycle), so runner
+    commits do not re-trigger the workflow's path filter.
+    """
     with _git_lock:
-        git("add", "-A", ".pa-relay")
+        git("add", "-q", "-A", ".pa-relay/out", ".pa-relay/runner.log",
+            ".pa-relay/exec.log", ".pa-relay/heartbeat.json", ".pa-relay/boot-probe.txt")
         staged = git("diff", "--cached", "--quiet", check=False)
         if staged.returncode == 0:
             return False  # nothing to commit
@@ -200,42 +207,49 @@ def main() -> int:
             log("idle timeout; exiting")
             break
         try:
+            pre = git("rev-parse", "HEAD").stdout.strip()
             sync_remote()
+            post = git("rev-parse", "HEAD").stdout.strip()
+            if post != pre:
+                log(f"synced branch now at {post[:10]}")
         except Exception as exc:
             log(f"sync error: {exc}")
             time.sleep(2)
             continue
-        for path in sorted(IN_DIR.glob("*.json")):
+        pending = sorted(IN_DIR.glob("*.json"))
+        fresh = [p for p in pending if p.stem not in _seen]
+        if fresh:
+            log(f"inbox: {len(pending)} file(s), {len(fresh)} new")
+        for path in fresh:
             rid = path.stem
-            if rid in _seen:
-                continue
             try:
                 req = json.loads(path.read_text())
-            except Exception:
+            except Exception as exc:
+                log(f"bad request {rid}: {exc}")
+                _seen.add(rid)
                 continue
-            _seen.add(rid)
-            last_activity = time.time()
             with _active_lock:
                 busy = _active >= MAX_WORKERS
             if busy:
                 log(f"worker pool full; deferring {rid}")
-                _seen.discard(rid)
                 continue
+            _seen.add(rid)
+            last_activity = time.time()
             with _active_lock:
                 _active += 1
-            path.unlink(missing_ok=True)
+            # NOTE: inbox file is left in place; the sandbox client owns it.
             t = threading.Thread(target=run_exchange, args=(req,), daemon=True)
             t.start()
             pool.append(t)
         pool = [t for t in pool if t.is_alive()]
         with _active_lock:
             busy = _active > 0
-        hb_interval = HEARTBEAT_BUSY_S if busy else HEARTBEAT_IDLE_S
         if busy:
             last_activity = time.time()
-        if now - last_heartbeat >= hb_interval:
+        if now - last_heartbeat >= (HEARTBEAT_BUSY_S if busy else HEARTBEAT_IDLE_S):
             last_heartbeat = now
             HEARTBEAT.write_text(json.dumps({"ts": now, "busy": busy}))
+            LOG_FILE.write_text("\n".join(LOG_LINES) + "\n")
             commit_and_push("relay: heartbeat")
         time.sleep(POLL_S)
     log("runner exiting")

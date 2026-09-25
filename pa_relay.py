@@ -264,15 +264,17 @@ class RelayTransport:
         self.git = _Git()
 
     def _prune(self) -> None:
-        out_dir = self.git.dir / ".pa-relay" / "out"
-        if out_dir.exists():
-            cutoff = time.time() - 900
-            for p in out_dir.glob("*.json"):
-                try:
-                    if p.stat().st_mtime < cutoff:
-                        p.unlink()
-                except OSError:
-                    pass
+        """Drop stale outputs and consumed requests (client owns .pa-relay/in)."""
+        for sub, ttl in (("out", 900), ("in", 300)):
+            d = self.git.dir / ".pa-relay" / sub
+            if d.exists():
+                cutoff = time.time() - ttl
+                for p in d.glob("*.json"):
+                    try:
+                        if p.stat().st_mtime < cutoff:
+                            p.unlink()
+                    except OSError:
+                        pass
 
     def request(self, method: str, url: str, *, headers: Optional[Dict[str, str]] = None,
                 json_body: Any = None, data: Any = None, stream: bool = False,
