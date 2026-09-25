@@ -184,6 +184,15 @@ def _boot() -> None:
     git("config", "user.name", "pa-relay[bot]")
     IN_DIR.mkdir(parents=True, exist_ok=True)
     OUT_DIR.mkdir(parents=True, exist_ok=True)
+    # ensure every runner-owned path exists so `git add <pathspec>` cannot fail
+    (OUT_DIR / ".gitkeep").touch()
+    for marker, default in (
+        (HEARTBEAT, json.dumps({"ts": time.time(), "busy": False})),
+        (LOG_FILE, ""),
+        (EXEC_LOG, ""),
+    ):
+        if not marker.exists():
+            marker.write_text(default)
     # immediate push sanity probe
     probe = REPO_DIR / ".pa-relay" / "boot-probe.txt"
     probe.write_text(f"boot {time.time()} branch={BRANCH}\n")
