@@ -18,6 +18,10 @@ from pa_router import (
     NoCredentialsError,
     PARouter,
 )
+import os as _os
+if _os.getenv("PA_RELAY"):
+    from pa_relay import install as _install_relay
+    _install_relay()
 import sys
 if hasattr(sys.stdout, "reconfigure"):
     sys.stdout.reconfigure(encoding="utf-8", errors="replace")
@@ -401,6 +405,8 @@ async def chat_completions(request: Request, body: ChatCompletionRequest):
     })
 def main() -> None:
     import uvicorn
-    uvicorn.run("pa_server:app", host="127.0.0.1", port=8001, reload=False)
+    host = _os.getenv("PA_HOST", "127.0.0.1")
+    port = int(_os.getenv("PA_PORT", "8001"))
+    uvicorn.run("pa_server:app", host=host, port=port, reload=False)
 if __name__ == "__main__":
     main()

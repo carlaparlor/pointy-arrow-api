@@ -1,0 +1,27 @@
+name: pa-relay
+on:
+  push:
+    branches: [arena/01a0da09-pointy-arrow-api]
+    paths:
+      - ".pa-relay/in/**"
+  workflow_dispatch: {}
+
+concurrency:
+  group: pa-relay
+  cancel-in-progress: false
+
+jobs:
+  relay:
+    runs-on: ubuntu-latest
+    timeout-minutes: 360
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0da09-pointy-arrow-api
+          fetch-depth: 0
+      - name: Install deps
+        run: python3 -m pip install --quiet requests
+      - name: Run relay
+        env:
+          PA_RELAY_BRANCH: arena/01a0da09-pointy-arrow-api
+        run: python3 .pa-relay/runner.py
