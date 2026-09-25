@@ -30,11 +30,11 @@ OUT_DIR = REPO_DIR / ".pa-relay" / "out"
 HEARTBEAT = REPO_DIR / ".pa-relay" / "heartbeat.json"
 
 MAX_LIFE_S = 320 * 60          # leave margin under the 360min job timeout
-IDLE_EXIT_S = 120              # exit when nothing happened for this long
+IDLE_EXIT_S = 8
 POLL_S = 1.0                   # remote-check cadence
 STREAM_PUSH_S = 1.5            # min seconds between stream update pushes
 HEARTBEAT_BUSY_S = 45          # heartbeat cadence while workers are active
-HEARTBEAT_IDLE_S = 150         # heartbeat cadence when idle
+HEARTBEAT_IDLE_S = 10
 MAX_WORKERS = 4
 HTTP_TIMEOUT = (15, 300)
 
