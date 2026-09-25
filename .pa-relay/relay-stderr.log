@@ -1,0 +1,23 @@
+Traceback (most recent call last):
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
+    sys.exit(main())
+             ^^^^^^
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 213, in main
+    _boot()
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 201, in _boot
+    ok = commit_and_push("relay: boot probe (push sanity check)")
+         ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 93, in commit_and_push
+    git("add", "-q", "-A", "-f", ".pa-relay/out", ".pa-relay/runner.log",
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 57, in git
+    raise RuntimeError(f"git {' '.join(args)} -> {res.returncode}: {res.stderr.strip()[:300]}")
+RuntimeError: git add -q -A -f .pa-relay/out .pa-relay/runner.log .pa-relay/exec.log .pa-relay/heartbeat.json .pa-relay/boot-probe.txt -> 129: error: unknown switch `q'
+usage: git add [<options>] [--] <pathspec>...
+
+    -n, --[no-]dry-run    dry run
+    -v, --[no-]verbose    be verbose
+
+    -i, --[no-]interactive
+                          interactive picking
+    -p, --[no-]patch      select hunks interactively
+    --[no-]auto-advance   aut
