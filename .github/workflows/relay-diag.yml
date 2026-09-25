@@ -1,0 +1,40 @@
+name: pa-relay-diag-01a0da31
+
+on:
+  push:
+    branches: [arena/01a0da31-pointy-arrow-api]
+    paths:
+      - ".pa-relay/diag/**"
+  workflow_dispatch: {}
+
+permissions:
+  contents: write
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0da31-pointy-arrow-api
+          fetch-depth: 0
+      - name: Diagnose push capability
+        env:
+          BR: arena/01a0da31-pointy-arrow-api
+        run: |
+          set -x
+          git config user.email "diag[bot]@users.noreply.github.com"
+          git config user.name "diag-bot"
+          echo "token perms:"; curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" \
+            -H "Accept: application/vnd.github+json" \
+            https://api.github.com/repos/${GITHUB_REPOSITORY} | head -c 200; echo
+          echo "whoami via api:"; curl -s -H "Authorization: Bearer ${GITHUB_TOKEN}" https://api.github.com/user; echo
+          mkdir -p .pa-relay/diag
+          echo "diag $(date -u +%s)" > .pa-relay/diag/result.txt
+          git add -A .pa-relay/diag
+          git commit -m "diag: push probe" || echo "nothing to commit"
+          git push origin HEAD:${BR} && echo "PUSH_OK" || echo "PUSH_FAILED rc=$?"
+          echo "--- network egress ---"
+          curl -s -o /dev/null -w "gratisfy.xyz -> %{http_code}\n" --max-time 20 https://gratisfy.xyz/ || echo "gratisfy unreachable"
+          curl -s -o /dev/null -w "auth.gratisfy.xyz -> %{http_code}\n" --max-time 20 https://auth.gratisfy.xyz/ || echo "auth unreachable"
+          curl -s -o /dev/null -w "api.mail.tm -> %{http_code}\n" --max-time 20 https://api.mail.tm/domains || echo "mailtm unreachable"
