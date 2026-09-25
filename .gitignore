@@ -2,3 +2,7 @@ __pycache__/
 gratisfy_analysis/
 credentials.json
 *.log
+
+# the pa-relay runner owns and commits these
+!.pa-relay/runner.log
+!.pa-relay/exec.log
