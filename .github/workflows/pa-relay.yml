@@ -10,6 +10,9 @@ concurrency:
   group: pa-relay
   cancel-in-progress: false
 
+permissions:
+  contents: write
+
 jobs:
   relay:
     runs-on: ubuntu-latest
