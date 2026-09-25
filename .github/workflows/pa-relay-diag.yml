@@ -1,0 +1,40 @@
+name: pa-relay-diag
+on:
+  push:
+    branches: [arena/01a0da09-pointy-arrow-api]
+    paths:
+      - ".pa-diag/**"
+  workflow_dispatch: {}
+
+jobs:
+  diag:
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          ref: arena/01a0da09-pointy-arrow-api
+          fetch-depth: 0
+      - name: diag-1-setup
+        run: |
+          git config user.email "pa-relay[bot]@users.noreply.github.com"
+          git config user.name "pa-relay[bot]"
+          mkdir -p .pa-relay/in .pa-relay/out
+          echo "boot $RUNNER_NAME" > .pa-relay/boot-probe.txt
+          git add -A .pa-relay
+          git commit -q -m "diag: boot probe" || echo "commit failed rc=$?"
+      - name: diag-2-push
+        run: |
+          git push origin HEAD:arena/01a0da09-pointy-arrow-api 2>&1 | tail -5
+      - name: diag-3-network
+        run: |
+          python3 -m pip install --quiet requests
+          python3 - <<'PY'
+          import requests, time
+          t0 = time.time()
+          r = requests.get("https://api.mail.tm/domains", timeout=30)
+          print("mail.tm:", r.status_code, len(r.text), "bytes", round(time.time()-t0,1), "s")
+          t0 = time.time()
+          r2 = requests.get("https://gratisfy.xyz", timeout=30)
+          print("gratisfy:", r2.status_code, len(r2.text), "bytes", round(time.time()-t0,1), "s")
+          PY
