@@ -15,3 +15,4 @@
 14:57:48 4e6677682f194025817fc96491e7963e POST https://api.mail.tm/token -> 200 443B
 14:57:54 bd1bb9f4c27347869e1c93bdb367bd45 POST https://auth.gratisfy.xyz/auth/v1/signup -> 200 999B
 14:58:00 9d1a6025d45d44c8a4079d54169a73bb GET https://api.mail.tm/messages -> 200 914B
+14:58:07 d969da82a2cb4a5b9ea8222e0431ee6f GET https://api.mail.tm/messages/6ab7dd7347689d1e2a7f59e5 -> 200 1857B
