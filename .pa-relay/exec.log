@@ -28,3 +28,4 @@
 14:59:31 98dadbfbcacf4c8d9cadc65f5793a391 POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2044B
 15:01:15 7f6589cb3ba14ea2bfb39e0943cc7f9a GET https://api.mail.tm/domains -> 200 347B
 15:01:21 3fd00b4b64a14c4e8ea7dc40eb6b38d4 POST https://api.mail.tm/accounts -> 201 309B
+15:01:27 d6fda3b3e3b543658361a54558fa2e91 POST https://api.mail.tm/token -> 200 443B
