@@ -59,3 +59,15 @@
 [pa-relay 16:48:15] synced branch now at 793f3385a8
 [pa-relay 16:48:15] inbox: 1 file(s), 1 new
 [pa-relay 16:48:15] -> GET https://auth.gratisfy.xyz/auth/v1/verify?token=8fd6c67b3bcfe2bafd16e026686d199a0e50a8f03604a1c5493f22a2&type=signup&redirect_to=https://gratisfy.xyz%5D stream=False
+[pa-relay 16:48:16] <- 1e09b74c6add438e8e34df3df482f013 200 5755B
+[pa-relay 16:48:22] synced branch now at 61290baba3
+[pa-relay 16:48:22] inbox: 1 file(s), 1 new
+[pa-relay 16:48:22] -> POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password stream=False
+[pa-relay 16:48:23] <- 3181ddf2e17949ccaf06a8a28785f7af 200 2043B
+[pa-relay 16:48:29] synced branch now at 48d98331c0
+[pa-relay 16:48:29] inbox: 1 file(s), 1 new
+[pa-relay 16:48:29] -> POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=refresh_token stream=False
+[pa-relay 16:48:30] <- 780c7dfba2b84d8b91f1f501bc625bfd 200 2019B
+[pa-relay 16:48:35] synced branch now at c5d75a8319
+[pa-relay 16:48:35] inbox: 1 file(s), 1 new
+[pa-relay 16:48:35] -> POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password stream=False
