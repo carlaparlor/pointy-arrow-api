@@ -33,3 +33,4 @@
 15:01:40 d34c0f2efeb3427d8c9c102372e642f6 GET https://api.mail.tm/messages -> 200 914B
 15:01:47 e45191832edc469d96f3c73fb7a97f89 GET https://api.mail.tm/messages/6ab7de5015979939ef8cdbd6 -> 200 1857B
 15:01:53 753df729deb6444dbb92fbaa6ca0b864 GET https://auth.gratisfy.xyz/auth/v1/verify?token=6046a7b99e907b58e8e8e7abaf1caca402b9274ab00ce904ea8f2a0e&type=signup&redirect_to=https://gratisfy.xyz%5D -> 200 5755B
+15:02:00 6a871c8691ff4b159085fb1f7d79b64d POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2040B
