@@ -12,3 +12,5 @@
 [pa-relay 14:34:10] <- 4595d935065b42efb59c7fcbb261e04d stream complete 347B
 [pa-relay 14:34:11] <- 655c19a340604ebfb771aa586e7fdd6a stream complete 347B
 [pa-relay 14:34:13] synced branch now at d4dbe57400
+[pa-relay 14:34:58] idle timeout; exiting
+[pa-relay 14:34:58] runner exiting
