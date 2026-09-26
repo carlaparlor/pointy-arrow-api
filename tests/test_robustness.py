@@ -99,6 +99,9 @@ def test_a_reader_never_sees_a_partial_file(tmp_path: Path):
 
     def reader() -> None:
         while not stop.is_set():
+            if not path.exists():
+                time.sleep(0.001)  # not written yet; that is not a partial read
+                continue
             try:
                 data = json.loads(path.read_text(encoding="utf-8"))
                 assert data["count"] == 1

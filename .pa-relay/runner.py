@@ -88,9 +88,9 @@ def commit_and_push(message: str) -> bool:
     commits do not re-trigger the workflow's path filter.
     """
     with _git_lock:
-        # -f: the repository's *.log ignore rule would otherwise make this add
-        # fail and take the whole runner down before it answered anything.
-        git("add", "-q", "-A", "-f", ".pa-relay/out", ".pa-relay/runner.log",
+        # NB: `git add` has no -q switch, and -f keeps the repository's *.log
+        # ignore rule from making this add fail and killing the runner.
+        git("add", "-A", "-f", ".pa-relay/out", ".pa-relay/runner.log",
             ".pa-relay/exec.log", ".pa-relay/heartbeat.json", ".pa-relay/boot-probe.txt")
         staged = git("diff", "--cached", "--quiet", check=False)
         if staged.returncode == 0:

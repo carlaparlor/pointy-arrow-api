@@ -59,12 +59,18 @@ def test_context_window_is_max_across_routes():
 # README parity -- the documented table must match the live registry
 # --------------------------------------------------------------------------- #
 def _readme_models() -> list[str]:
+    """Model ids listed in the README's Models table (and only that table)."""
     text = (REPO / "README.md").read_text(encoding="utf-8")
+    section = text.split("## Models", 1)[1].split("\n## ", 1)[0]
     rows = []
-    for line in text.splitlines():
+    for line in section.splitlines():
         line = line.strip()
-        if line.startswith("| `") and line.endswith(" |"):
-            rows.append(line.split("`")[1])
+        if not line.startswith("| `") or not line.endswith(" |"):
+            continue
+        cells = [c.strip() for c in line.strip("|").split("|")]
+        # a model row is exactly: | `id` | context |
+        if len(cells) == 2 and cells[0].startswith("`") and cells[0].endswith("`"):
+            rows.append(cells[0].strip("`"))
     return rows
 
 
