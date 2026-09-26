@@ -3,3 +3,9 @@
 [pa-relay 16:08:55] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
 [pa-relay 16:09:40] idle timeout; exiting
 [pa-relay 16:09:40] runner exiting
+[pa-relay 16:09:41] FATAL: SystemExit: 0
+[pa-relay 16:09:41] Traceback (most recent call last):
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
+    sys.exit(main())
+SystemExit: 0
+
