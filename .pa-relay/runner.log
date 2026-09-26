@@ -1,22 +1,10 @@
-[pa-relay 14:33:58] runner up on branch arena/01a0da31-pointy-arrow-api
-[pa-relay 14:34:00] boot probe push: OK
-[pa-relay 14:34:00] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
-[pa-relay 14:34:00] inbox: 4 file(s), 4 new
-[pa-relay 14:34:00] -> GET https://api.mail.tm/domains stream=True
-[pa-relay 14:34:00] -> GET https://api.mail.tm/domains stream=True
-[pa-relay 14:34:00] -> GET https://api.mail.tm/domains stream=True
-[pa-relay 14:34:00] -> GET https://api.mail.tm/domains stream=True
-[pa-relay 14:34:07] synced branch now at a39d5e40dc
-[pa-relay 14:34:07] <- 0d8e3757705444ed9e4bcd138a18fb64 stream complete 347B
-[pa-relay 14:34:08] <- bc8ab27b568c40668196c6ef354189a1 stream complete 347B
-[pa-relay 14:34:10] <- 4595d935065b42efb59c7fcbb261e04d stream complete 347B
-[pa-relay 14:34:11] <- 655c19a340604ebfb771aa586e7fdd6a stream complete 347B
-[pa-relay 14:34:13] synced branch now at d4dbe57400
-[pa-relay 14:34:58] idle timeout; exiting
-[pa-relay 14:34:58] runner exiting
-[pa-relay 14:34:59] FATAL: SystemExit: 0
-[pa-relay 14:34:59] Traceback (most recent call last):
-  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
-    sys.exit(main())
-SystemExit: 0
-
+[pa-relay 14:42:09] runner up on branch arena/01a0da31-pointy-arrow-api
+[pa-relay 14:42:11] boot probe push: OK
+[pa-relay 14:42:11] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
+[pa-relay 14:42:11] inbox: 6 file(s), 6 new
+[pa-relay 14:42:11] -> GET https://api.mail.tm/domains stream=True
+[pa-relay 14:42:11] -> GET https://api.mail.tm/domains stream=True
+[pa-relay 14:42:11] -> GET https://api.mail.tm/domains stream=True
+[pa-relay 14:42:11] -> GET https://api.mail.tm/domains stream=True
+[pa-relay 14:42:11] worker pool full; deferring bc8ab27b568c40668196c6ef354189a1
+[pa-relay 14:42:11] worker pool full; deferring e37b2089cf4d4e9589afcae6058996a2
