@@ -1,16 +1,5 @@
-[pa-relay 14:52:28] runner up on branch arena/01a0da31-pointy-arrow-api
-[pa-relay 14:52:29] boot probe push: OK
-[pa-relay 14:52:29] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
-[pa-relay 14:52:29] inbox: 2 file(s), 2 new
-[pa-relay 14:52:29] -> GET https://api.mail.tm/domains stream=False
-[pa-relay 14:52:29] -> GET https://api.mail.tm/domains stream=False
-[pa-relay 14:52:30] <- 15afe4dcc4ab415a87aae251af6762fa 200 347B
-[pa-relay 14:52:30] <- f49945a22af54617950e6413d538cfd2 200 347B
-[pa-relay 14:53:15] idle timeout; exiting
-[pa-relay 14:53:15] runner exiting
-[pa-relay 14:53:16] FATAL: SystemExit: 0
-[pa-relay 14:53:16] Traceback (most recent call last):
-  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
-    sys.exit(main())
-SystemExit: 0
-
+[pa-relay 14:55:46] runner up on branch arena/01a0da31-pointy-arrow-api
+[pa-relay 14:55:47] boot probe push: OK
+[pa-relay 14:55:47] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
+[pa-relay 14:55:47] inbox: 1 file(s), 1 new
+[pa-relay 14:55:47] -> GET https://api.mail.tm/domains stream=False
