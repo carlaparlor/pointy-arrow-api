@@ -29,8 +29,8 @@ BRANCH = os.getenv("PA_RELAY_BRANCH", "arena/01a0da31-pointy-arrow-api")
 IN_DIR = REPO / ".pa-relay" / "in"
 OUT_DIR = REPO / ".pa-relay" / "out"
 
-BOOT_TIMEOUT_S = 240.0     # a cold runner needs to boot before the first response
-POLL_S = 2.0
+BOOT_TIMEOUT_S = 300.0     # a cold runner needs to boot before the first response
+POLL_S = 1.5
 
 
 class RelayUnavailable(RuntimeError):
@@ -78,7 +78,10 @@ def _fetch_heartbeat() -> Optional[Dict[str, Any]]:
 
 
 def fetch_all() -> None:
-    _git("fetch", "-q", "origin", BRANCH)
+    # An explicit refspec is required: a bare `git fetch origin <branch>` only
+    # updates FETCH_HEAD, so `origin/<branch>` would stay stale forever and the
+    # relay responses would never become visible.
+    _git("fetch", "-q", "-f", "origin", f"+{BRANCH}:refs/remotes/origin/{BRANCH}")
 
 
 def read_response(rid: str) -> Optional[Dict[str, Any]]:
@@ -98,6 +101,27 @@ class RelayTransport(requests.adapters.BaseAdapter):
     def __init__(self, timeout: float = BOOT_TIMEOUT_S) -> None:
         self.timeout = timeout
         self.last_meta: Dict[str, Any] = {}
+        self.pruned: List[str] = []
+
+    def _answered(self, rid: str) -> bool:
+        res = _git("show", f"origin/{BRANCH}:.pa-relay/out/{rid}.json", check=False)
+        return res.returncode == 0 and bool(res.stdout.strip())
+
+    def _prune_inbox(self) -> List[str]:
+        """Delete inbox entries that already have a response.
+
+        The runner's `_seen` set is per-process, so every fresh workflow run
+        re-executes *every* file left in the inbox.  Without pruning, a handful
+        of requests is enough to fill the worker pool and starve the newest one.
+        """
+        removed = []
+        if not IN_DIR.is_dir():
+            return removed
+        for path in sorted(IN_DIR.glob("*.json")):
+            if self._answered(path.stem):
+                path.unlink()
+                removed.append(path.stem)
+        return removed
 
     def send(self, request: requests.PreparedRequest, **kwargs) -> requests.Response:
         timeout = kwargs.get("timeout") or self.timeout
@@ -112,6 +136,7 @@ class RelayTransport(requests.adapters.BaseAdapter):
             raise RelayUnavailable(f"unsupported request body type {type(body)!r}")
 
         rid = uuid.uuid4().hex
+        wants_stream = bool(kwargs.get("stream"))
         payload = {
             "id": rid,
             "method": request.method,
@@ -119,11 +144,15 @@ class RelayTransport(requests.adapters.BaseAdapter):
             "headers": {k: v for k, v in request.headers.items()
                         if k.lower() not in ("content-length", "host", "accept-encoding")},
             "body_b64": body_b64,
-            "stream": True,
+            "stream": wants_stream,
             "ts": time.time(),
         }
         IN_DIR.mkdir(parents=True, exist_ok=True)
+        fetch_all()
+        pruned = self._prune_inbox()
         (IN_DIR / f"{rid}.json").write_text(json.dumps(payload))
+        if pruned:
+            self.pruned = pruned
 
         _git("add", "-A", ".pa-relay/in")
         _git("commit", "-q", "-m", f"relay: request {rid} {request.method} {request.url}",
@@ -132,8 +161,10 @@ class RelayTransport(requests.adapters.BaseAdapter):
             push = _git("push", "-q", "origin", f"HEAD:{BRANCH}", check=False)
             if push.returncode == 0:
                 break
-            _git("fetch", "-q", "origin", BRANCH)
-            _git("rebase", "-q", f"origin/{BRANCH}", check=False)
+            fetch_all()
+            # --autostash: the sandbox usually has unrelated work in progress,
+            # and a plain rebase refuses to run with a dirty tree.
+            _git("rebase", "--autostash", "-q", f"origin/{BRANCH}", check=False)
         else:
             raise RelayUnavailable("could not push the relay request")
 
