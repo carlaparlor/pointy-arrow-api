@@ -8,3 +8,5 @@
 [pa-relay 15:21:02] inbox: 1 file(s), 1 new
 [pa-relay 15:21:02] -> POST https://gratisfy.xyz/api/chat stream=True
 [pa-relay 15:21:04] <- 065dc7b203444871bbb7186488d7cbfd stream complete 192B
+[pa-relay 15:21:49] idle timeout; exiting
+[pa-relay 15:21:49] runner exiting
