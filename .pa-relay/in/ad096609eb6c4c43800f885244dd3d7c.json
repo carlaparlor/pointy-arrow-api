@@ -1,0 +1,1 @@
+{"id": "ad096609eb6c4c43800f885244dd3d7c", "method": "GET", "url": "https://api.mail.tm/domains", "headers": {"User-Agent": "python-requests/2.34.2", "Accept": "*/*", "Connection": "keep-alive"}, "body_b64": "", "stream": false, "ts": 1790435817.0353472}
