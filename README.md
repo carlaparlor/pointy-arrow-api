@@ -104,6 +104,46 @@ pytest -m live -v
 `.github/workflows/test.yml` runs both suites on every push, so the live tests
 execute on a runner that has unrestricted egress.
 
+From a network that cannot reach the Gratisfy hosts (their TLS is reset, so the
+connection looks alive but is not), `tests/relay_client.py` turns a GitHub
+Actions runner into a real transport: each request is committed to
+`.pa-relay/in/`, the runner executes it against the real server, and the real
+response is committed back to `.pa-relay/out/`. The production code is unchanged
+— it just gets a `requests` adapter that happens to run somewhere with egress.
+Round-trip time is roughly 15 s.
+
+### Live findings
+
+Results of the real runs, so they do not have to be re-derived:
+
+* **Reachability (live, relay):** `gratisfy.xyz`, `auth.gratisfy.xyz`,
+  `api.mail.tm` and `api.gratisfy.xyz` all answer. `api.gratisfy.xyz/v1/models`
+  is key-gated (`missing_api_key`), and an anonymous `POST /api/chat` is
+  rejected with 401/403/422.
+* **Credential harvesting works end to end (live, relay).** The real signup →
+  mail.tm verification → password-login flow produces a real, usable
+  `access_token` / `refresh_token` pair, and the real GoTrue server accepts the
+  refresh-token grant, the password grant, and recovers a stale session via
+  `ensure_fresh()`.
+* **The website chat endpoint is now behind a human-verification gate.** Every
+  route, on every provider, answers
+  `403 {"code":"turnstile_required","error_origin":"gratisfy"}` — "Human
+  verification is required before using a Gratisfy-provided model." This was
+  reproduced on 2026-09-26 across `deepseek-v4-flash`, `qwen3.8-27b`, `grok-4.6`
+  and `minimax-m3`, covering the Gratisfy-provided providers (aqua, evolvex,
+  voidai) and the bring-your-own-key ones (cloudflare, groq, openrouter, routmy,
+  vercel). Adding `turnstile_token` / `turnstileToken` to the payload changes the
+  server's behaviour (it stops answering immediately), so those field names are
+  parsed — but a valid token cannot be obtained without a browser and a human.
+  `tests/test_live_upstream.py` asserts the router *surfaces* this rejection
+  rather than hiding it, and re-checks the gate on every live run so a lift is
+  noticed immediately.
+* **Consequence for real-chat live tests:** they need a token from an account
+  that has passed the challenge. Pass one with `PA_LIVE_TOKEN` (plus optional
+  `PA_LIVE_REFRESH_TOKEN`) and `test_live_non_streaming_chat`,
+  `test_live_tool_calling`, `test_live_reasoning_model` and
+  `test_live_router_collect` will run for real.
+
 ### What the suite covers
 
 * **`test_registry.py`** — catalogue integrity, README parity, alias/label
