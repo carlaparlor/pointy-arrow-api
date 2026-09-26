@@ -59,3 +59,4 @@
 16:48:23 3181ddf2e17949ccaf06a8a28785f7af POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2043B
 16:48:30 780c7dfba2b84d8b91f1f501bc625bfd POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=refresh_token -> 200 2019B
 16:48:35 12a3854ae2964e84b9a284a7db28e0ee POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2044B
+16:48:42 6a0b149cf0614c5d89aa9c38ce97ae77 POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=refresh_token -> 200 2020B
