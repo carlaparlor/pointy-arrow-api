@@ -158,7 +158,10 @@ class RelayTransport(requests.adapters.BaseAdapter):
         if pruned:
             self.pruned = pruned
 
-        _git("add", "-A", ".pa-relay/in")
+        # -f: a relay request MUST be staged.  Without it, an ignore rule
+        # silently swallows the request, nothing is pushed, and the caller
+        # waits forever for a response that was never asked for.
+        _git("add", "-f", "-A", ".pa-relay/in")
         _git("commit", "-q", "-m", f"relay: request {rid} {request.method} {request.url}",
              check=False)
         for attempt in range(6):
