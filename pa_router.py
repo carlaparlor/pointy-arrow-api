@@ -216,10 +216,17 @@ def _parse_plaintext_tool_calls(text: str) -> Optional[List[Dict[str, Any]]]:
         calls.append({"name": name, "arguments": args})
     return calls or None
 class _GratisfyClient:
-    def __init__(self, credential: Credential, timeout: Tuple[int, int] = HTTP_TIMEOUT) -> None:
+    def __init__(
+        self,
+        credential: Credential,
+        timeout: Tuple[int, int] = HTTP_TIMEOUT,
+        session: Optional[requests.Session] = None,
+    ) -> None:
         self.credential = credential
         self.timeout = timeout
-        self.session = requests.Session()
+        # an explicit session lets a caller share a connection pool, or route
+        # traffic through a proxy / alternate transport
+        self.session = session if session is not None else requests.Session()
     def _headers(self) -> Dict[str, str]:
         ensure_fresh(self.credential)
         return {
@@ -609,9 +616,15 @@ class CredentialPool:
                             self._save()
             self.maybe_harvest()
 class PARouter:
-    def __init__(self, pool: Optional[CredentialPool] = None, registry: ModelRegistry = REGISTRY) -> None:
+    def __init__(
+        self,
+        pool: Optional[CredentialPool] = None,
+        registry: ModelRegistry = REGISTRY,
+        session: Optional[requests.Session] = None,
+    ) -> None:
         self.pool = pool or CredentialPool()
         self.registry = registry
+        self.session = session
     def ensure_ready(self, block: bool = True) -> None:
         self.pool.ensure_ready(block=block)
     def stream(
@@ -687,7 +700,7 @@ class PARouter:
                             if any(not s.depleted for s in self.pool._states):
                                 raise AllCredentialsBusyError("All working credentials are cooling down; try again shortly.")
                             raise NoCredentialsError("No credentials available.")
-                        client = _GratisfyClient(state.credential)
+                        client = _GratisfyClient(state.credential, session=self.session)
                         try:
                             if mode == "native" and not tools:
                                 for ev in client.stream(

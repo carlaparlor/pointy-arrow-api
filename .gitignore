@@ -6,3 +6,10 @@ credentials.json
 # the pa-relay runner owns and commits these
 !.pa-relay/runner.log
 !.pa-relay/exec.log
+
+# relay traffic is committed transiently while a request is in flight; the
+# client prunes answered entries, but never let it accumulate in history
+.pa-relay/in/*.json
+.pa-relay/out/*.json
+!.pa-relay/in/.gitkeep
+!.pa-relay/out/.gitkeep

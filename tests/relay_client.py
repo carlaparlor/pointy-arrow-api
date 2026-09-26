@@ -125,6 +125,10 @@ class RelayTransport(requests.adapters.BaseAdapter):
 
     def send(self, request: requests.PreparedRequest, **kwargs) -> requests.Response:
         timeout = kwargs.get("timeout") or self.timeout
+        if isinstance(timeout, (tuple, list)):
+            # requests passes (connect, read); the relay budget is a single number
+            timeout = max(float(t) for t in timeout if t)
+        timeout = float(timeout)
         body = request.body
         if body is None:
             body_b64 = ""

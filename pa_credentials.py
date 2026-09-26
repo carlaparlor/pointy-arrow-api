@@ -23,6 +23,11 @@ MAILTM_BASE = (os.getenv("PA_MAILTM_BASE") or "https://api.mail.tm").rstrip("/")
 MAILTM_TIMEOUT = 30
 MAILTM_VERIFY_POLL_SECS = 5.0
 MAILTM_VERIFY_TIMEOUT_SECS = 180.0
+# A single reusable session for all auth/mail traffic (connection reuse, and a
+# single place to attach a proxy or an alternate transport).
+SESSION = requests.Session()
+
+
 def _default_output() -> Path:
     override = os.getenv("PA_CREDENTIALS_PATH")
     if override:
@@ -148,7 +153,7 @@ def _auth_post(path: str, body: Dict[str, Any]) -> Dict[str, Any]:
         "apikey": SUPABASE_ANON_KEY,
         "Content-Type": "application/json",
     }
-    with requests.post(url, headers=headers, json=body, timeout=HTTP_TIMEOUT) as resp:
+    with SESSION.post(url, headers=headers, json=body, timeout=HTTP_TIMEOUT) as resp:
         text = resp.text
         if not resp.ok:
             raise _HttpError(f"auth {resp.status_code}: {text[:300]}", status=resp.status_code, body=text)
@@ -208,7 +213,7 @@ def _mailtm_headers(token: Optional[str] = None) -> Dict[str, str]:
         h["Authorization"] = f"Bearer {token}"
     return h
 def _mailtm_get_active_domain() -> str:
-    with requests.get(f"{MAILTM_BASE}/domains", headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
+    with SESSION.get(f"{MAILTM_BASE}/domains", headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
         r.raise_for_status()
         data = r.json()
     members = data.get("hydra:member") or data.get("hydra:members") or []
@@ -220,23 +225,23 @@ def _mailtm_get_active_domain() -> str:
     raise RuntimeError("no active mail.tm domain")
 def _mailtm_create_account(address: str, password: str) -> Dict[str, Any]:
     body = {"address": address, "password": password}
-    with requests.post(f"{MAILTM_BASE}/accounts", json=body, headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
+    with SESSION.post(f"{MAILTM_BASE}/accounts", json=body, headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
         if r.status_code == 409:
             raise RuntimeError(f"mail.tm account collision for {address}")
         r.raise_for_status()
         return r.json()
 def _mailtm_get_token(address: str, password: str) -> str:
     body = {"address": address, "password": password}
-    with requests.post(f"{MAILTM_BASE}/token", json=body, headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
+    with SESSION.post(f"{MAILTM_BASE}/token", json=body, headers=_mailtm_headers(), timeout=MAILTM_TIMEOUT) as r:
         r.raise_for_status()
         return r.json()["token"]
 def _mailtm_list_messages(token: str) -> List[Dict[str, Any]]:
-    with requests.get(f"{MAILTM_BASE}/messages", headers=_mailtm_headers(token), timeout=MAILTM_TIMEOUT) as r:
+    with SESSION.get(f"{MAILTM_BASE}/messages", headers=_mailtm_headers(token), timeout=MAILTM_TIMEOUT) as r:
         r.raise_for_status()
         data = r.json()
     return data.get("hydra:member") or []
 def _mailtm_read_message(token: str, message_id: str) -> Dict[str, Any]:
-    with requests.get(f"{MAILTM_BASE}/messages/{message_id}", headers=_mailtm_headers(token), timeout=MAILTM_TIMEOUT) as r:
+    with SESSION.get(f"{MAILTM_BASE}/messages/{message_id}", headers=_mailtm_headers(token), timeout=MAILTM_TIMEOUT) as r:
         r.raise_for_status()
         return r.json()
 VERIFY_PATH_MARKER = "/auth/v1/verify"
@@ -273,7 +278,7 @@ def _mailtm_wait_for_verify_url(token: str, timeout_s: float = MAILTM_VERIFY_TIM
     raise RuntimeError(f"no verify email received within {timeout_s}s")
 def _gratisfy_signup(email: str, password: str) -> Dict[str, Any]:
     body = {"email": email, "password": password}
-    with requests.post(
+    with SESSION.post(
         f"{SUPABASE_URL}/auth/v1/signup",
         json=body,
         headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
@@ -284,7 +289,7 @@ def _gratisfy_signup(email: str, password: str) -> Dict[str, Any]:
         return r.json()
 def _gratisfy_password_login(email: str, password: str) -> Dict[str, Any]:
     body = {"email": email, "password": password}
-    with requests.post(
+    with SESSION.post(
         f"{SUPABASE_URL}/auth/v1/token?grant_type=password",
         json=body,
         headers={"apikey": SUPABASE_ANON_KEY, "Content-Type": "application/json"},
@@ -295,7 +300,7 @@ def _gratisfy_password_login(email: str, password: str) -> Dict[str, Any]:
         return r.json()
 def _confirm_email(verify_url: str) -> None:
     headers = {"User-Agent": DEFAULT_USER_AGENT}
-    with requests.get(verify_url, headers=headers, allow_redirects=True, timeout=HTTP_TIMEOUT) as r:
+    with SESSION.get(verify_url, headers=headers, allow_redirects=True, timeout=HTTP_TIMEOUT) as r:
         if r.status_code >= 400:
             raise RuntimeError(f"verify failed {r.status_code}: {r.text[:200]}")
 def _rand_password(length: int = 24) -> str:
