@@ -6,3 +6,5 @@
 [pa-relay 14:51:27] -> GET https://api.mail.tm/domains stream=False
 [pa-relay 14:51:28] <- 15afe4dcc4ab415a87aae251af6762fa 200 347B
 [pa-relay 14:51:28] <- f49945a22af54617950e6413d538cfd2 200 347B
+[pa-relay 14:52:13] idle timeout; exiting
+[pa-relay 14:52:13] runner exiting
