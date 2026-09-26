@@ -51,3 +51,4 @@
 16:47:33 3bda63489ed44db3869c2b424b11752b POST https://gratisfy.xyz/api/chat -> 401 87B
 16:47:37 211675de9f0d4bd9adb0365a87e4dec9 GET https://api.mail.tm/domains -> 200 347B
 16:47:44 42186e6279b84f218945cf487b0b8421 POST https://api.mail.tm/accounts -> 201 309B
+16:47:51 8acb683756cd45cba99761ad0bf18bf0 POST https://api.mail.tm/token -> 200 443B
