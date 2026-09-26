@@ -106,3 +106,9 @@
 [pa-relay 14:59:39] <- 20d1fbcfcc2f49c096e955aa2361d9e6 stream complete 192B
 [pa-relay 15:00:25] idle timeout; exiting
 [pa-relay 15:00:25] runner exiting
+[pa-relay 15:00:26] FATAL: SystemExit: 0
+[pa-relay 15:00:26] Traceback (most recent call last):
+  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
+    sys.exit(main())
+SystemExit: 0
+
