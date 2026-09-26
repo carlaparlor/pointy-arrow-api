@@ -58,3 +58,4 @@
 16:48:16 1e09b74c6add438e8e34df3df482f013 GET https://auth.gratisfy.xyz/auth/v1/verify?token=8fd6c67b3bcfe2bafd16e026686d199a0e50a8f03604a1c5493f22a2&type=signup&redirect_to=https://gratisfy.xyz%5D -> 200 5755B
 16:48:23 3181ddf2e17949ccaf06a8a28785f7af POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2043B
 16:48:30 780c7dfba2b84d8b91f1f501bc625bfd POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=refresh_token -> 200 2019B
+16:48:35 12a3854ae2964e84b9a284a7db28e0ee POST https://auth.gratisfy.xyz/auth/v1/token?grant_type=password -> 200 2044B
