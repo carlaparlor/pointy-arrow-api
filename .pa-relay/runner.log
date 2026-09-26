@@ -1,14 +1,5 @@
-[pa-relay 15:12:57] runner up on branch arena/01a0da31-pointy-arrow-api
-[pa-relay 15:12:58] boot probe push: OK
-[pa-relay 15:12:58] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
-[pa-relay 15:12:58] inbox: 1 file(s), 1 new
-[pa-relay 15:12:58] -> POST https://gratisfy.xyz/api/chat stream=True
-[pa-relay 15:13:03] <- ba8a3178047a414499915fcb2dce023c stream complete 192B
-[pa-relay 15:13:49] idle timeout; exiting
-[pa-relay 15:13:49] runner exiting
-[pa-relay 15:13:50] FATAL: SystemExit: 0
-[pa-relay 15:13:50] Traceback (most recent call last):
-  File "/home/runner/work/pointy-arrow-api/pointy-arrow-api/.pa-relay/runner.py", line 273, in <module>
-    sys.exit(main())
-SystemExit: 0
-
+[pa-relay 15:14:59] runner up on branch arena/01a0da31-pointy-arrow-api
+[pa-relay 15:15:00] boot probe push: OK
+[pa-relay 15:15:00] remote: origin	https://github.com/carlaparlor/pointy-arrow-api (fetch)
+[pa-relay 15:15:01] inbox: 1 file(s), 1 new
+[pa-relay 15:15:01] -> POST https://gratisfy.xyz/api/chat stream=True
